@@ -7,7 +7,7 @@ app.use(express.json());
 
 // Route de base
 app.get('/', (req, res) => {
-    res.send('Bienvenue sur mon serveur Node.js PRO !');
+    res.send('Bienvenue sur mon serveur Node.js!');
 });
 
 // Démarrer le serveur
