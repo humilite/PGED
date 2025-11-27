@@ -1,59 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { authService } from '../services/authService';
 
 const AuthContext = createContext();
-
-export const AuthProvider = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const checkAuth = () => {
-      const authenticated = authService.isAuthenticated();
-      const userData = authService.getCurrentUser();
-      setIsAuthenticated(authenticated);
-      setUser(userData);
-      setLoading(false);
-    };
-
-    checkAuth();
-  }, []);
-
-  const login = async (email, password) => {
-    try {
-      const userData = await authService.login(email, password);
-      setIsAuthenticated(true);
-      setUser(userData.user);
-      return { success: true };
-    } catch (error) {
-      return { 
-        success: false, 
-        error: error.response?.data?.message || 'Erreur de connexion' 
-      };
-    }
-  };
-
-  const logout = () => {
-    authService.logout();
-    setIsAuthenticated(false);
-    setUser(null);
-  };
-
-  const value = {
-    isAuthenticated,
-    user,
-    login,
-    logout,
-    loading
-  };
-
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
-};
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -61,4 +8,85 @@ export const useAuth = () => {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
+};
+
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const userData = localStorage.getItem('user');
+    
+    if (token && userData) {
+      setUser(JSON.parse(userData));
+    }
+    setLoading(false);
+  }, []);
+
+  const login = async (email, password) => {
+    try {
+      console.log('🔐 Tentative de connexion avec:', email);
+
+      const response = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      console.log('📡 Réponse du serveur - Status:', response.status, response.statusText);
+      console.log('📡 Headers:', Object.fromEntries(response.headers.entries()));
+
+      let data;
+      try {
+        data = await response.json();
+        console.log('📦 Données reçues:', data);
+      } catch (parseError) {
+        console.error('❌ Erreur de parsing JSON:', parseError);
+        return { success: false, error: `Erreur de réponse du serveur: ${response.statusText}` };
+      }
+
+      if (response.ok && data.token) {
+        console.log('✅ Connexion réussie pour:', data.user.email);
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        setUser(data.user);
+        return { success: true, user: data.user };
+      } else {
+        console.warn('❌ Échec de connexion - Status:', response.status, '- Erreur:', data.error);
+        const errorMessage = data.error || `Erreur ${response.status}: ${response.statusText}`;
+        return { success: false, error: errorMessage };
+      }
+    } catch (error) {
+      console.error('💥 Erreur réseau lors de la connexion:', error);
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        return { success: false, error: 'Impossible de contacter le serveur. Vérifiez que le backend est démarré sur localhost:5000' };
+      }
+      return { success: false, error: `Erreur de réseau: ${error.message}` };
+    }
+  }; // ← ACCOLADE FERMANTE MANQUANTE AJOUTÉE ICI
+
+  const logout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
+  };
+
+  const isAuthenticated = !!user;
+
+  const value = {
+    user,
+    login,
+    logout,
+    loading,
+    isAuthenticated
+  };
+
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
