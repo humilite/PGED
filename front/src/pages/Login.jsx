@@ -32,7 +32,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-gradient-to-br from-green-800 via-green-700 to-green-600">
+    <div className="min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-linear-to-br from-green-800 via-green-700 to-green-600">
       
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         {/* Logo de la présidence */}
