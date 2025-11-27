@@ -14,14 +14,41 @@ const DocumentView = () => {
 
   const fetchDocument = async () => {
     try {
-      const response = await api.get(`/documents/${id}`);
-      setDocument(response.data);
+      const response = await documentsAPI.getById(id);
+      setDocument(response);
     } catch (err) {
       setError('Document non trouvé');
       console.error('Error fetching document:', err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDownload = async () => {
+    try {
+      const blob = await documentsAPI.download(id);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = document.title;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error('Error downloading document:', err);
+      alert('Erreur lors du téléchargement');
+    }
+  };
+
+  const getFileIcon = (fileType) => {
+    if (fileType?.toLowerCase().includes('pdf')) return <FileText className="h-8 w-8 text-red-500" />;
+    if (fileType?.toLowerCase().includes('image') || fileType?.toLowerCase().includes('jpg') || fileType?.toLowerCase().includes('png')) return <Image className="h-8 w-8 text-green-500" />;
+    return <File className="h-8 w-8 text-blue-500" />;
+  };
+
+  const canPreview = (fileType) => {
+    return fileType?.toLowerCase().includes('pdf') || fileType?.toLowerCase().includes('image');
   };
 
   if (loading) return <div className="p-8 text-center">Chargement...</div>;

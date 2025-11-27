@@ -1,4 +1,4 @@
-const { pool } = require('../config/database');
+import pool from '../config/database.js';
 
 class Classification {
   // Récupérer toutes les classifications
@@ -160,4 +160,4 @@ class Classification {
   }
 }
 
-module.exports = Classification;
+export default Classification;

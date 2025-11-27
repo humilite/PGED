@@ -22,8 +22,8 @@ const Upload = () => {
 
   const fetchClassifications = async () => {
     try {
-      const response = await api.get('/classifications');
-      setClassifications(response.data.classifications || []);
+      const response = await documentsAPI.getClassifications();
+      setClassifications(response.classifications || []);
     } catch (error) {
       console.error('Error fetching classifications:', error);
     }

@@ -1,16 +1,16 @@
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-require('dotenv').config();
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import 'dotenv/config';
 
-const { testConnection } = require('./config/database');
+import { testConnection } from './config/database.js';
 
 // Import des routes
-const authRoutes = require('./routes/authRoutes');
-const documentRoutes = require('./routes/documentRoutes');
-const userRoutes = require('./routes/userRoutes');
-const adminRoutes = require('./routes/adminRoutes');
-const classificationRoutes = require('./routes/classificationRoutes');
+import authRoutes from './routes/authRoutes.js';
+import documentRoutes from './routes/documentRoutes.js';
+import userRoutes from './routes/userRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
+import classificationRoutes from './routes/classificationRoutes.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;

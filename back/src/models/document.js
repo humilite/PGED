@@ -1,4 +1,4 @@
-const { pool } = require('../config/database');
+import pool from '../config/database.js';
 
 class Document {
   // Créer un nouveau document
@@ -319,4 +319,4 @@ class Document {
   }
 }
 
-module.exports = Document;
+export default Document;

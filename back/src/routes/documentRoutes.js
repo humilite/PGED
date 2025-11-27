@@ -1,18 +1,18 @@
 import express from 'express';
-import { 
-  uploadDocument, 
-  searchDocuments, 
+import {
+  uploadDocument,
+  searchDocuments,
   getDocumentById,
   updateDocument,
   downloadDocument,
   getDocumentHistory
-} from '../controllers/documentController';
-import { authMiddleware } from '../middleware/authMiddleware';
-import { upload } from '../config/multer';
+} from '../controllers/documentController.js';
+import { authenticateToken } from '../middleware/authMiddleware.js';
+import { upload } from '../config/multer.js';
 
 const router = express.Router();
 
-router.use(authMiddleware);
+router.use(authenticateToken);
 
 router.post('/upload', upload.single('file'), uploadDocument);
 router.get('/search', searchDocuments);

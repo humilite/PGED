@@ -9,6 +9,7 @@ import EditDocument from './pages/editDocument';
 import AdminDashboard from './pages/admin/admindashboard';
 // Supprimez l'import Reports s'il n'existe pas
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import Layout from './components/Layout';
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -25,37 +26,49 @@ const App = () => {
           
           <Route path="/dashboard" element={
             <ProtectedRoute>
-              <Dashboard />
+              <Layout>
+                <Dashboard />
+              </Layout>
             </ProtectedRoute>
           } />
-          
+
           <Route path="/search" element={
             <ProtectedRoute>
-              <Search />
+              <Layout>
+                <Search />
+              </Layout>
             </ProtectedRoute>
           } />
-          
+
           <Route path="/upload" element={
             <ProtectedRoute>
-              <Upload />
+              <Layout>
+                <Upload />
+              </Layout>
             </ProtectedRoute>
           } />
-          
+
           <Route path="/documents/:id" element={
             <ProtectedRoute>
-              <DocumentView />
+              <Layout>
+                <DocumentView />
+              </Layout>
             </ProtectedRoute>
           } />
-          
+
           <Route path="/documents/:id/edit" element={
             <ProtectedRoute>
-              <EditDocument />
+              <Layout>
+                <EditDocument />
+              </Layout>
             </ProtectedRoute>
           } />
-          
+
           <Route path="/admin" element={
             <ProtectedRoute>
-              <AdminDashboard />
+              <Layout>
+                <AdminDashboard />
+              </Layout>
             </ProtectedRoute>
           } />
           
