@@ -1,5 +1,8 @@
 {
   "dependencies": {
     "sqlite3": "^5.1.7"
+  },
+  "scripts": {
+    "build:css": "tailwindcss -i ./src/input.css -o ./src/output.css --watch"
   }
 }
