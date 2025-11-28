@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   PieChart, Pie, Cell,
-  LineChart, Line, AreaChart, Area,
+  LineChart, Line,
   ResponsiveContainer
 } from 'recharts';
 import { documentsAPI } from '../services/api';
@@ -17,7 +17,6 @@ const Dashboard = () => {
 
   const [loading, setLoading] = useState(true);
 
-  // Données mock pour les graphiques
   const dataBar = [
     { name: 'Jan', documents: 45 },
     { name: 'Fév', documents: 52 },
@@ -43,7 +42,7 @@ const Dashboard = () => {
     { name: 'Dim', demandes: 3 }
   ];
 
-  const COLORS = ['#00C49F', '#FFBB28', '#FF8042'];
+  const COLORS = ['#10b981', '#f59e0b', '#ef4444'];
 
   useEffect(() => {
     loadDashboardData();
@@ -52,20 +51,15 @@ const Dashboard = () => {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      
-      // Simulation de données ou appel API réel
       const documentsData = await documentsAPI.getStats();
-      
       setStats({
         totalDocuments: documentsData.total || 156,
         documentsApprouves: documentsData.approved || 102,
         documentsEnAttente: documentsData.pending || 31,
         documentsRejetes: documentsData.rejected || 23
       });
-      
     } catch (error) {
       console.error('Erreur chargement dashboard:', error);
-      // Données par défaut en cas d'erreur
       setStats({
         totalDocuments: 156,
         documentsApprouves: 102,
@@ -79,103 +73,106 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 text-lg">Chargement des données...</p>
+          <div className="w-12 h-12 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Chargement des données...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="space-y-6 max-w-7xl mx-auto">
       {/* En-tête */}
-      <header className="text-center mb-8">
-        <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
+      <header>
+        <h1 className="text-2xl font-bold text-gray-900 mb-1">
           Tableau de Bord PGED
         </h1>
-        <p className="text-gray-600 text-lg">
+        <p className="text-gray-600">
           Vue d'ensemble des documents et statistiques
         </p>
       </header>
 
-      {/* Cartes de statistiques */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {/* Carte Total Documents */}
-        <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 p-6 flex items-center space-x-4">
-          <div className="flex-shrink-0 w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center text-2xl">
-            📊
-          </div>
-          <div className="flex-1">
-            <h3 className="text-gray-500 text-sm font-medium mb-1">Total Documents</h3>
-            <p className="text-2xl font-bold text-gray-800 mb-1">{stats.totalDocuments}</p>
-            <span className="text-sm text-gray-500">+12% ce mois</span>
-          </div>
-        </div>
-
-        {/* Carte Documents Approuvés */}
-        <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 p-6 flex items-center space-x-4">
-          <div className="flex-shrink-0 w-16 h-16 bg-green-100 rounded-full flex items-center justify-center text-2xl">
-            ✅
-          </div>
-          <div className="flex-1">
-            <h3 className="text-gray-500 text-sm font-medium mb-1">Documents Approuvés</h3>
-            <p className="text-2xl font-bold text-gray-800 mb-1">{stats.documentsApprouves}</p>
-            <span className="text-sm text-green-600 font-medium">+8%</span>
+      {/* Cartes de statistiques - 4 colonnes */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="flex items-center space-x-3">
+            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+              <span className="text-xl">📊</span>
+            </div>
+            <div>
+              <h3 className="text-gray-500 text-sm font-medium">Total Documents</h3>
+              <p className="text-xl font-bold text-gray-900">{stats.totalDocuments}</p>
+              <span className="text-xs text-gray-500">+12% ce mois</span>
+            </div>
           </div>
         </div>
 
-        {/* Carte En Attente */}
-        <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 p-6 flex items-center space-x-4">
-          <div className="flex-shrink-0 w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center text-2xl">
-            ⏳
-          </div>
-          <div className="flex-1">
-            <h3 className="text-gray-500 text-sm font-medium mb-1">En Attente</h3>
-            <p className="text-2xl font-bold text-gray-800 mb-1">{stats.documentsEnAttente}</p>
-            <span className="text-sm text-yellow-600 font-medium">-5%</span>
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="flex items-center space-x-3">
+            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+              <span className="text-xl">✅</span>
+            </div>
+            <div>
+              <h3 className="text-gray-500 text-sm font-medium">Approuvés</h3>
+              <p className="text-xl font-bold text-gray-900">{stats.documentsApprouves}</p>
+              <span className="text-xs text-green-600 font-medium">+8%</span>
+            </div>
           </div>
         </div>
 
-        {/* Carte Documents Rejetés */}
-        <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 p-6 flex items-center space-x-4">
-          <div className="flex-shrink-0 w-16 h-16 bg-red-100 rounded-full flex items-center justify-center text-2xl">
-            ❌
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="flex items-center space-x-3">
+            <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+              <span className="text-xl">⏳</span>
+            </div>
+            <div>
+              <h3 className="text-gray-500 text-sm font-medium">En Attente</h3>
+              <p className="text-xl font-bold text-gray-900">{stats.documentsEnAttente}</p>
+              <span className="text-xs text-yellow-600 font-medium">-5%</span>
+            </div>
           </div>
-          <div className="flex-1">
-            <h3 className="text-gray-500 text-sm font-medium mb-1">Documents Rejetés</h3>
-            <p className="text-2xl font-bold text-gray-800 mb-1">{stats.documentsRejetes}</p>
-            <span className="text-sm text-red-600 font-medium">+3%</span>
+        </div>
+
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="flex items-center space-x-3">
+            <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+              <span className="text-xl">❌</span>
+            </div>
+            <div>
+              <h3 className="text-gray-500 text-sm font-medium">Rejetés</h3>
+              <p className="text-xl font-bold text-gray-900">{stats.documentsRejetes}</p>
+              <span className="text-xs text-red-600 font-medium">+3%</span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Graphiques */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        {/* Graphique en barres - Évolution mensuelle */}
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          <h3 className="text-xl font-semibold text-gray-800 mb-4 text-center">
+      {/* Graphiques - 2 colonnes côte à côte */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        {/* Graphique barres */}
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">
             Évolution Mensuelle des Documents
           </h3>
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer width="100%" height={250}>
             <BarChart data={dataBar}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
+              <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+              <XAxis dataKey="name" stroke="#6b7280" fontSize={12} />
+              <YAxis stroke="#6b7280" fontSize={12} />
               <Tooltip />
-              <Legend />
-              <Bar dataKey="documents" fill="#8884d8" name="Documents" />
+              <Bar dataKey="documents" fill="#10b981" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
-        {/* Graphique circulaire - Répartition */}
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          <h3 className="text-xl font-semibold text-gray-800 mb-4 text-center">
+        {/* Graphique circulaire */}
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">
             Répartition des Documents
           </h3>
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer width="100%" height={250}>
             <PieChart>
               <Pie
                 data={dataPie}
@@ -183,67 +180,39 @@ const Dashboard = () => {
                 cy="50%"
                 labelLine={false}
                 label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                outerRadius={100}
-                fill="#8884d8"
+                outerRadius={80}
                 dataKey="value"
               >
                 {dataPie.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip formatter={(value) => [`${value}%`, 'Pourcentage']} />
+              <Tooltip />
             </PieChart>
           </ResponsiveContainer>
         </div>
       </div>
 
-      {/* Graphiques pleine largeur */}
-      <div className="grid grid-cols-1 gap-6">
-        {/* Graphique linéaire - Demandes hebdomadaires */}
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          <h3 className="text-xl font-semibold text-gray-800 mb-4 text-center">
-            Demandes Hebdomadaires
-          </h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={dataLine}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Line 
-                type="monotone" 
-                dataKey="demandes" 
-                stroke="#82ca9d" 
-                strokeWidth={2}
-                name="Nombre de demandes"
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Graphique aires - Tendances */}
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          <h3 className="text-xl font-semibold text-gray-800 mb-4 text-center">
-            Tendances des Documents Traités
-          </h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={dataBar}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Area 
-                type="monotone" 
-                dataKey="documents" 
-                stroke="#8884d8" 
-                fill="#8884d8" 
-                fillOpacity={0.3}
-                name="Documents traités"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
+      {/* Graphique linéaire - pleine largeur */}
+      <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">
+          Demandes Hebdomadaires
+        </h3>
+        <ResponsiveContainer width="100%" height={250}>
+          <LineChart data={dataLine}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+            <XAxis dataKey="name" stroke="#6b7280" fontSize={12} />
+            <YAxis stroke="#6b7280" fontSize={12} />
+            <Tooltip />
+            <Line 
+              type="monotone" 
+              dataKey="demandes" 
+              stroke="#3b82f6" 
+              strokeWidth={2}
+              dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );
