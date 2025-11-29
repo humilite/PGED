@@ -1,11 +1,41 @@
-# PGED Backend CommonJS to ES6 Conversion
+# Test Plan: Basic Users Page Functionality
 
-## Tasks
-- [x] Convert back/src/server.js: Replace all require() statements with ES6 import statements
-- [x] Convert back/src/controllers/authController.js: Change module.exports to export default
-- [x] Convert back/src/controllers/adminController.js: Replace require() statements with ES6 imports
-- [ ] Convert back/src/models/document.js: Replace require() with ES6 import
-- [ ] Convert back/src/models/classification.js: Replace require() with ES6 import
-- [x] Test the application to ensure all imports work correctly
-- [x] Verify server starts without errors
-- [x] Check that all routes and functionality work as expected
+## ✅ Completed Fixes
+- [x] Database migration from PostgreSQL to SQLite
+- [x] Backend server running on port 5000
+- [x] Frontend development server running on port 5173
+- [x] Database initialized with admin user
+
+## 🔄 Current Testing Phase: Basic Functionality
+
+### Test 1: Admin Login
+- [ ] Open browser to http://localhost:5173
+- [ ] Navigate to login page
+- [ ] Login with admin credentials: admin@dgrh.gov.ga / admin123
+- [ ] Verify successful login and redirect to dashboard
+
+### Test 2: Navigation to Users Page
+- [ ] From dashboard, navigate to Admin section
+- [ ] Click on "Utilisateurs" or users management link
+- [ ] Verify URL changes to /admin/users
+- [ ] Check that UserList component renders
+
+### Test 3: Users Data Loading
+- [ ] Verify users table displays
+- [ ] Check that at least admin user appears in list
+- [ ] Verify table columns: Utilisateur, Email, Rôle, Département, Statut, Dernière connexion, Actions
+- [ ] Check for any error messages
+
+### Test 4: Basic UI Elements
+- [ ] Verify "Nouvel Utilisateur" button is present
+- [ ] Check search bar functionality
+- [ ] Verify pagination controls if multiple pages
+- [ ] Check responsive design on different screen sizes
+
+## 📋 Next Phase: Full CRUD Testing (After Basic Tests Pass)
+- [ ] Create new user functionality
+- [ ] Edit existing user functionality
+- [ ] Delete user functionality
+- [ ] Search and filter functionality
+- [ ] Error handling and validation
+- [ ] Token refresh and authentication

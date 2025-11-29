@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Users, Folder, FileText, Settings, BarChart3 } from 'lucide-react';
 import api from '../../services/authService';
 
@@ -104,13 +105,13 @@ const AdminDashboard = () => {
                   <h3 className="text-lg font-medium text-gray-900">Administration</h3>
                 </div>
                 <nav className="p-4 space-y-2">
-                  <a
-                    href="/admin/users"
+                  <Link
+                    to="/admin/users"
                     className="flex items-center gap-3 p-3 text-gray-700 rounded-lg hover:bg-gray-100 font-medium"
                   >
                     <Users className="h-5 w-5" />
                     Utilisateurs
-                  </a>
+                  </Link>
                   <a
                     href="/admin/classifications"
                     className="flex items-center gap-3 p-3 text-gray-700 rounded-lg hover:bg-gray-100 font-medium"

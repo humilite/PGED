@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -23,14 +23,72 @@ api.interceptors.request.use(
   }
 );
 
+// Variable pour éviter les boucles de rafraîchissement
+let isRefreshing = false;
+let failedQueue = [];
+
 // Intercepteur pour gérer les erreurs
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        // Si un rafraîchissement est en cours, mettre la requête en attente
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        }).then(token => {
+          originalRequest.headers.Authorization = `Bearer ${token}`;
+          return api(originalRequest);
+        }).catch(err => {
+          return Promise.reject(error);
+        });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        // Tenter de rafraîchir le token
+        const refreshResponse = await api.post('/auth/refresh');
+        const { token: newToken, user: newUser } = refreshResponse.data;
+
+        // Mettre à jour le token dans le localStorage
+        localStorage.setItem('token', newToken);
+        localStorage.setItem('user', JSON.stringify(newUser));
+
+        // Mettre à jour l'en-tête Authorization pour la requête originale
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+
+        // Traiter la file d'attente des requêtes échouées
+        failedQueue.forEach(({ resolve }) => {
+          resolve(newToken);
+        });
+        failedQueue = [];
+
+        // Relancer la requête originale
+        return api(originalRequest);
+
+      } catch (refreshError) {
+        // Échec du rafraîchissement, déconnexion
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+
+        // Rejeter toutes les requêtes en attente
+        failedQueue.forEach(({ reject }) => {
+          reject(refreshError);
+        });
+        failedQueue = [];
+
+        // Rediriger vers la page de connexion
+        window.location.href = '/login';
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+      }
     }
+
     return Promise.reject(error);
   }
 );

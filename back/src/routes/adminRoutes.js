@@ -158,6 +158,30 @@ router.post('/maintenance/clear-cache', authenticateToken, adminMiddleware, asyn
   }
 });
 
+// Liste des utilisateurs avec pagination et recherche
+router.get('/users', authenticateToken, adminMiddleware, async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const search = req.query.search || '';
+
+    const result = await User.findAll(page, limit, search);
+
+    res.json({
+      users: result.users,
+      pagination: {
+        page: result.page,
+        limit,
+        total: result.total,
+        totalPages: result.totalPages
+      }
+    });
+  } catch (error) {
+    console.error('Get users error:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
 // Maintenance - Optimiser la base de données
 router.post('/maintenance/optimize-db', authenticateToken, adminMiddleware, async (req, res) => {
   try {

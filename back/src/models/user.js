@@ -3,15 +3,20 @@ import pool from '../config/database.js';
 class User {
   // Créer un nouvel utilisateur
   static async create(userData) {
-    const { email, password, first_name, last_name, role = 'user' } = userData;
+    const { email, password, first_name, last_name, role = 'user', department } = userData;
+
+    // Validation des champs requis
+    if (!email || !password || !first_name || !last_name) {
+      throw new Error('Tous les champs requis doivent être fournis: email, password, first_name, last_name');
+    }
 
     const query = `
-      INSERT INTO users (email, password, first_name, last_name, role)
-      VALUES ($1, $2, $3, $4, $5)
-      RETURNING id, email, first_name, last_name, role, is_active, created_at
+      INSERT INTO users (email, password, first_name, last_name, role, department)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING *
     `;
 
-    const values = [email, password, first_name, last_name, role];
+    const values = [email, password, first_name, last_name, role, department];
 
     try {
       const result = await pool.query(query, values);
@@ -36,7 +41,7 @@ class User {
   // Trouver un utilisateur par ID
   static async findById(id) {
     const query = `
-      SELECT id, email, first_name, last_name, role, is_active, last_login, created_at
+      SELECT id, email, first_name, last_name, role, department, is_active, last_login, created_at
       FROM users WHERE id = $1
     `;
 
@@ -50,16 +55,48 @@ class User {
 
   // Mettre à jour un utilisateur
   static async update(id, updateData) {
-    const { first_name, last_name, role, is_active } = updateData;
+    const { first_name, last_name, role, department, is_active } = updateData;
+
+    // Construire la requête dynamiquement pour éviter les valeurs undefined
+    const setParts = [];
+    const values = [];
+    let paramIndex = 1;
+
+    if (first_name !== undefined) {
+      setParts.push(`first_name = $${paramIndex++}`);
+      values.push(first_name);
+    }
+    if (last_name !== undefined) {
+      setParts.push(`last_name = $${paramIndex++}`);
+      values.push(last_name);
+    }
+    if (role !== undefined) {
+      setParts.push(`role = $${paramIndex++}`);
+      values.push(role);
+    }
+    if (department !== undefined) {
+      setParts.push(`department = $${paramIndex++}`);
+      values.push(department);
+    }
+    if (is_active !== undefined) {
+      setParts.push(`is_active = $${paramIndex++}`);
+      values.push(is_active);
+    }
+
+    if (setParts.length === 0) {
+      throw new Error('Aucune donnée à mettre à jour');
+    }
+
+    setParts.push(`updated_at = CURRENT_TIMESTAMP`);
 
     const query = `
       UPDATE users
-      SET first_name = $1, last_name = $2, role = $3, is_active = $4, updated_at = CURRENT_TIMESTAMP
-      WHERE id = $5
-      RETURNING id, email, first_name, last_name, role, is_active, updated_at
+      SET ${setParts.join(', ')}
+      WHERE id = $${paramIndex}
+      RETURNING *
     `;
 
-    const values = [first_name, last_name, role, is_active, id];
+    values.push(id);
 
     try {
       const result = await pool.query(query, values);
@@ -86,28 +123,24 @@ class User {
 
     try {
       let query = `
-        SELECT id, email, first_name, last_name, role, is_active,
+        SELECT id, email, first_name, last_name, role, department, is_active,
                last_login, created_at,
                (SELECT COUNT(*) FROM documents WHERE user_id = users.id) as document_count
         FROM users
       `;
 
       const params = [];
-      let paramCount = 0;
+      let paramIndex = 1;
 
       if (search) {
-        paramCount++;
-        query += ` WHERE (first_name ILIKE $${paramCount} OR last_name ILIKE $${paramCount} OR email ILIKE $${paramCount})`;
-        params.push(`%${search}%`);
+        query += ` WHERE (UPPER(first_name) LIKE UPPER($${paramIndex}) OR UPPER(last_name) LIKE UPPER($${paramIndex + 1}) OR UPPER(email) LIKE UPPER($${paramIndex + 2}))`;
+        const searchPattern = `%${search}%`;
+        params.push(searchPattern, searchPattern, searchPattern);
+        paramIndex += 3;
       }
 
-      paramCount++;
-      query += ` ORDER BY created_at DESC LIMIT $${paramCount}`;
-      params.push(limit);
-
-      paramCount++;
-      query += ` OFFSET $${paramCount}`;
-      params.push(offset);
+      query += ` ORDER BY created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+      params.push(limit, offset);
 
       const result = await pool.query(query, params);
       const users = result.rows;
@@ -117,8 +150,9 @@ class User {
       const countParams = [];
 
       if (search) {
-        countQuery += ` WHERE (first_name ILIKE $1 OR last_name ILIKE $1 OR email ILIKE $1)`;
-        countParams.push(`%${search}%`);
+        countQuery += ` WHERE (UPPER(first_name) LIKE UPPER($1) OR UPPER(last_name) LIKE UPPER($2) OR UPPER(email) LIKE UPPER($3))`;
+        const searchPattern = `%${search}%`;
+        countParams.push(searchPattern, searchPattern, searchPattern);
       }
 
       const countResult = await pool.query(countQuery, countParams);
@@ -155,4 +189,4 @@ class User {
   }
 }
 
-export default User; // ← EXPORT ES6
+export default User;

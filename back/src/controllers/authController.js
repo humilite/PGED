@@ -1,7 +1,12 @@
 // authController.js - Version avec export par défaut
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'secret-fallback';
+// Configuration JWT (doit correspondre à authMiddleware.js)
+const JWT_CONFIG = {
+  secret: process.env.JWT_SECRET,
+  fallbackSecret: 'pged-jwt-secret-key-2024-secure-random-string-change-in-production',
+  algorithms: ['HS256']
+};
 
 const authController = {
     login: async (req, res) => {
@@ -35,15 +40,18 @@ const authController = {
                 });
             }
 
+            const secret = process.env.JWT_SECRET || JWT_CONFIG.fallbackSecret;
+            const expiresIn = process.env.JWT_EXPIRES_IN || '24h';
+
             const token = jwt.sign(
-                { 
-                    id: user.id, 
-                    email: user.email, 
-                    role: user.role, 
-                    name: user.name 
+                {
+                    id: user.id,
+                    email: user.email,
+                    role: user.role,
+                    name: user.name
                 },
-                JWT_SECRET,
-                { expiresIn: '24h' }
+                secret,
+                { expiresIn, algorithm: 'HS256' }
             );
 
             res.json({
@@ -81,6 +89,55 @@ const authController = {
             res.status(500).json({
                 success: false,
                 error: 'Erreur serveur'
+            });
+        }
+    },
+
+    refreshToken: async (req, res) => {
+        try {
+            // L'utilisateur est déjà authentifié via le middleware
+            const user = req.user;
+
+            if (!user) {
+                return res.status(401).json({
+                    success: false,
+                    error: 'Utilisateur non authentifié'
+                });
+            }
+
+            const secret = process.env.JWT_SECRET || JWT_CONFIG.fallbackSecret;
+            const expiresIn = process.env.JWT_EXPIRES_IN || '24h';
+
+            const newToken = jwt.sign(
+                {
+                    id: user.id,
+                    email: user.email,
+                    role: user.role,
+                    name: user.name,
+                    is_active: user.is_active
+                },
+                secret,
+                { expiresIn, algorithm: 'HS256' }
+            );
+
+            console.log(`🔄 Token rafraîchi pour l'utilisateur: ${user.email}`);
+
+            res.json({
+                success: true,
+                token: newToken,
+                user: {
+                    id: user.id,
+                    email: user.email,
+                    name: user.name,
+                    role: user.role
+                }
+            });
+
+        } catch (error) {
+            console.error('Erreur rafraîchissement token:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Erreur lors du rafraîchissement du token'
             });
         }
     }

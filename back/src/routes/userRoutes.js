@@ -8,7 +8,14 @@ const router = express.Router();
 // Créer un nouvel utilisateur (admin seulement)
 router.post('/', authenticateToken, adminMiddleware, async (req, res) => {
   try {
-    const { email, password, first_name, last_name, role } = req.body;
+    console.log('Received user creation request body:', req.body);
+    const { email, password, first_name, last_name, role, department } = req.body;
+
+    // Validation des champs requis
+    if (!email || !password || !first_name || !last_name) {
+      console.log('Validation failed. Fields:', { email, password: password ? '[HIDDEN]' : null, first_name, last_name });
+      return res.status(400).json({ error: 'Tous les champs requis doivent être fournis (email, password, first_name, last_name)' });
+    }
 
     // Hacher le mot de passe
     const bcrypt = await import('bcryptjs');
@@ -19,15 +26,23 @@ router.post('/', authenticateToken, adminMiddleware, async (req, res) => {
       password: hashedPassword,
       first_name,
       last_name,
-      role: role || 'user'
+      role: role || 'user',
+      department
     });
 
-    // Ne pas retourner le mot de passe
-    const { password: _, ...userWithoutPassword } = user;
-
+    // Ne pas retourner le mot de passe et convertir en camelCase
     res.status(201).json({
       message: 'Utilisateur créé avec succès',
-      user: userWithoutPassword
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        role: user.role,
+        department: user.department,
+        isActive: user.is_active,
+        createdAt: user.created_at
+      }
     });
   } catch (error) {
     console.error('Create user error:', error);
@@ -44,7 +59,26 @@ router.get('/', authenticateToken, adminMiddleware, async (req, res) => {
 
     const result = await User.findAll(page, limit, search);
 
-    res.json(result);
+    // Transformer les données pour inclure le champ department et convertir en camelCase
+    const transformedUsers = result.users.map(user => ({
+      id: user.id,
+      email: user.email,
+      firstName: user.first_name,
+      lastName: user.last_name,
+      role: user.role,
+      department: user.department || '',
+      isActive: user.is_active,
+      lastLogin: user.last_login,
+      createdAt: user.created_at,
+      documentCount: user.document_count
+    }));
+
+    res.json({
+      users: transformedUsers,
+      total: result.total,
+      page: result.page,
+      totalPages: result.totalPages
+    });
   } catch (error) {
     console.error('Get users error:', error);
     res.status(500).json({ error: 'Erreur lors de la récupération des utilisateurs' });
@@ -68,10 +102,20 @@ router.get('/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Utilisateur non trouvé' });
     }
 
-    // Ne pas retourner le mot de passe
-    const { password, ...userWithoutPassword } = user;
-
-    res.json({ user: userWithoutPassword });
+    // Ne pas retourner le mot de passe et convertir en camelCase
+    res.json({
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        role: user.role,
+        department: user.department,
+        isActive: user.is_active,
+        lastLogin: user.last_login,
+        createdAt: user.created_at
+      }
+    });
   } catch (error) {
     console.error('Get user error:', error);
     res.status(500).json({ error: 'Erreur serveur' });
@@ -81,30 +125,42 @@ router.get('/:id', authenticateToken, async (req, res) => {
 // Mettre à jour un utilisateur
 router.put('/:id', authenticateToken, async (req, res) => {
   try {
-    const { id } = req.params;
-    const { first_name, last_name, role, is_active } = req.body;
+    const id = parseInt(req.params.id);
+    if (isNaN(id) || id <= 0) {
+      return res.status(400).json({ error: 'ID invalide' });
+    }
+    const { first_name, last_name, role, department, is_active } = req.body;
     const userId = req.user.userId;
     const userRole = req.user.role;
 
     // Les utilisateurs peuvent modifier leur propre profil, les admins peuvent modifier tous les profils
-    if (userRole !== 'admin' && parseInt(id) !== userId) {
+    if (userRole !== 'admin' && id !== userId) {
       return res.status(403).json({ error: 'Accès non autorisé' });
     }
 
     // Seuls les admins peuvent changer le rôle
-    const updateData = userRole === 'admin' ? { first_name, last_name, role, is_active } : { first_name, last_name };
+    const updateData = userRole === 'admin' ? { first_name, last_name, role, department, is_active } : { first_name, last_name, department };
 
     const user = await User.update(id, updateData);
     if (!user) {
       return res.status(404).json({ error: 'Utilisateur non trouvé' });
     }
 
-    // Ne pas retourner le mot de passe
-    const { password, ...userWithoutPassword } = user;
-
+    // Ne pas retourner le mot de passe et convertir en camelCase
     res.json({
       message: 'Utilisateur mis à jour avec succès',
-      user: userWithoutPassword
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        role: user.role,
+        department: user.department,
+        isActive: user.is_active,
+        lastLogin: user.last_login,
+        createdAt: user.created_at,
+        updatedAt: user.updated_at
+      }
     });
   } catch (error) {
     console.error('Update user error:', error);
@@ -115,7 +171,10 @@ router.put('/:id', authenticateToken, async (req, res) => {
 // Supprimer un utilisateur (désactiver)
 router.delete('/:id', authenticateToken, adminMiddleware, async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = parseInt(req.params.id);
+    if (isNaN(id) || id <= 0) {
+      return res.status(400).json({ error: 'ID invalide' });
+    }
 
     const user = await User.update(id, { is_active: false });
     if (!user) {

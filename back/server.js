@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { connectDB } from './src/config/database.js';
 
 // Importer les routes
 import authRoutes from './src/routes/authRoutes.js';
@@ -67,25 +68,38 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Erreur interne du serveur' });
 });
 
-// Démarrer le serveur
-app.listen(PORT, () => {
-  console.log('');
-  console.log('🎉 ========================================');
-  console.log('🚀  Serveur PGED démarré avec succès!');
-  console.log(`📡  URL: http://localhost:${PORT}`);
-  console.log('========================================');
-  console.log('');
-  console.log('📋 Points de terminaison disponibles:');
-  console.log(`   📍 GET  http://localhost:${PORT}/`);
-  console.log(`   📍 GET  http://localhost:${PORT}/api/health`);
-  console.log(`   📍 POST http://localhost:${PORT}/api/auth/login`);
-  console.log(`   📍 GET  http://localhost:${PORT}/api/documents/dashboard/stats`);
-  console.log(`   📍 GET  http://localhost:${PORT}/api/classifications`);
-  console.log(`   📍 GET  http://localhost:${PORT}/api/admin/stats`);
-  console.log('');
-  console.log('🔐 Comptes de test:');
-  console.log('   👤 Admin: admin@dgrh.gov.ga / admin123');
-  console.log('   👤 User:  user@dgrh.gov.ga / user123');
-  console.log('   👤 Gestionnaire: gestionnaire@dgrh.gov.ga / gest123');
-  console.log('');
-});
+// Connexion à PostgreSQL et démarrage du serveur
+const startServer = async () => {
+  // Connexion à PostgreSQL (optionnel pour les tests JWT)
+  const dbConnected = await connectDB();
+  if (!dbConnected) {
+    console.warn('⚠️  Connexion PostgreSQL échouée - mode sans base de données activé');
+    console.warn('⚠️  Certaines fonctionnalités peuvent ne pas fonctionner');
+  }
+
+  // Démarrer le serveur
+  app.listen(PORT, () => {
+    console.log('');
+    console.log('🎉 ========================================');
+    console.log('🚀  Serveur PGED démarré avec succès!');
+    console.log(`📡  URL: http://localhost:${PORT}`);
+    console.log('========================================');
+    console.log('');
+    console.log('📋 Points de terminaison disponibles:');
+    console.log(`   📍 GET  http://localhost:${PORT}/`);
+    console.log(`   📍 GET  http://localhost:${PORT}/api/health`);
+    console.log(`   📍 POST http://localhost:${PORT}/api/auth/login`);
+    console.log(`   📍 GET  http://localhost:${PORT}/api/documents/dashboard/stats`);
+    console.log(`   📍 GET  http://localhost:${PORT}/api/classifications`);
+    console.log(`   📍 GET  http://localhost:${PORT}/api/admin/stats`);
+    console.log(`   📍 GET  http://localhost:${PORT}/api/users`);
+    console.log('');
+    console.log('🔐 Comptes de test:');
+    console.log('   👤 Admin: admin@dgrh.gov.ga / admin123');
+    console.log('   👤 User:  user@dgrh.gov.ga / user123');
+    console.log('   👤 Gestionnaire: gestionnaire@dgrh.gov.ga / gest123');
+    console.log('');
+  });
+};
+
+startServer();

@@ -304,9 +304,9 @@ class Document {
     }
 
     const query = `
-      UPDATE documents 
-      SET is_deleted = true, deleted_at = CURRENT_TIMESTAMP 
-      WHERE id = $1 
+      UPDATE documents
+      SET is_deleted = true, deleted_at = CURRENT_TIMESTAMP
+      WHERE id = $1
       RETURNING *
     `;
 
@@ -315,6 +315,38 @@ class Document {
       return result.rows[0];
     } catch (error) {
       throw new Error(`Erreur lors de la suppression: ${error.message}`);
+    }
+  }
+
+  // Obtenir les statistiques du tableau de bord
+  static async getDashboardStats(userId, userRole) {
+    try {
+      let totalQuery = `SELECT COUNT(*) as total FROM documents WHERE is_deleted = false`;
+      let recentQuery = `SELECT COUNT(*) as recent FROM documents WHERE created_at >= CURRENT_DATE - INTERVAL '7 days' AND is_deleted = false`;
+      let userQuery = `SELECT COUNT(*) as user_docs FROM documents WHERE user_id = $1 AND is_deleted = false`;
+
+      const params = [userId];
+
+      // Restriction pour les non-admins
+      if (userRole !== 'admin') {
+        totalQuery += ` AND (confidentiality_level != 'confidentiel' OR user_id = $1)`;
+        recentQuery += ` AND (confidentiality_level != 'confidentiel' OR user_id = $1)`;
+        params.push(userId);
+      }
+
+      const [totalResult, recentResult, userResult] = await Promise.all([
+        pool.query(totalQuery, userRole !== 'admin' ? [userId] : []),
+        pool.query(recentQuery, userRole !== 'admin' ? [userId] : []),
+        pool.query(userQuery, params)
+      ]);
+
+      return {
+        totalDocuments: parseInt(totalResult.rows[0].total),
+        recentDocuments: parseInt(recentResult.rows[0].recent),
+        userDocuments: parseInt(userResult.rows[0].user_docs)
+      };
+    } catch (error) {
+      throw new Error(`Erreur lors de la récupération des stats du tableau de bord: ${error.message}`);
     }
   }
 }

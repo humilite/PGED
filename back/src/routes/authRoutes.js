@@ -10,4 +10,7 @@ router.post('/login', authController.login);
 // Route pour obtenir le profil utilisateur (protégée)
 router.get('/profile', authenticateToken, authController.getProfile);
 
+// Route pour rafraîchir le token (protégée)
+router.post('/refresh', authenticateToken, authController.refreshToken);
+
 export default router;

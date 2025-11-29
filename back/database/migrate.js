@@ -1,4 +1,4 @@
-import sqlite3 from 'sqlite3';
+import pool from '../src/config/database.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -6,90 +6,76 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const dbPath = path.join(__dirname, 'pged.db');
+console.log('🔄 Initialisation de la base de données PostgreSQL...');
 
-// Créer le dossier database s'il n'existe pas
-if (!fs.existsSync(__dirname)) {
-  fs.mkdirSync(__dirname, { recursive: true });
-}
+// Script SQL pour créer les tables (PostgreSQL)
+const dropSQL = `
+DROP TABLE IF EXISTS document_metadata CASCADE;
+DROP TABLE IF EXISTS documents CASCADE;
+DROP TABLE IF EXISTS classification_plan CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+`;
 
-console.log('🔄 Initialisation de la base de données SQLite...');
-console.log('📁 Chemin de la base de données:', dbPath);
-
-// Supprimer l'ancienne base de données si elle existe
-if (fs.existsSync(dbPath)) {
-  console.log('🗑️  Suppression de l ancienne base de données...');
-  fs.unlinkSync(dbPath);
-}
-
-// Créer la connexion à la base de données
-const db = new sqlite3.Database(dbPath, (err) => {
-  if (err) {
-    console.error('❌ Erreur de connexion à la base de données:', err.message);
-    process.exit(1);
-  }
-  console.log('✅ Connecté à la base de données SQLite');
-});
-
-// Script SQL pour créer les tables
 const schemaSQL = `
 -- Table des utilisateurs
-CREATE TABLE IF NOT EXISTS users (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  email TEXT UNIQUE NOT NULL,
-  password TEXT NOT NULL,
-  first_name TEXT NOT NULL,
-  last_name TEXT NOT NULL,
-  role TEXT NOT NULL DEFAULT 'user',
-  is_active INTEGER DEFAULT 1,
-  last_login DATETIME,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  password VARCHAR(255) NOT NULL,
+  first_name VARCHAR(100) NOT NULL,
+  last_name VARCHAR(100) NOT NULL,
+  role VARCHAR(50) NOT NULL DEFAULT 'user',
+  department VARCHAR(100),
+  is_active BOOLEAN DEFAULT true,
+  last_login TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Table du plan de classement
-CREATE TABLE IF NOT EXISTS classification_plan (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  code TEXT UNIQUE NOT NULL,
-  name TEXT NOT NULL,
+CREATE TABLE classification_plan (
+  id SERIAL PRIMARY KEY,
+  code VARCHAR(50) UNIQUE NOT NULL,
+  name VARCHAR(255) NOT NULL,
   description TEXT,
   parent_id INTEGER REFERENCES classification_plan(id),
-  path TEXT,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  path VARCHAR(500),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Table des documents
-CREATE TABLE IF NOT EXISTS documents (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  index_alphanum TEXT UNIQUE NOT NULL,
-  title TEXT NOT NULL,
-  file_name TEXT NOT NULL,
-  file_path TEXT NOT NULL,
+CREATE TABLE documents (
+  id SERIAL PRIMARY KEY,
+  index_alphanum VARCHAR(100) UNIQUE NOT NULL,
+  title VARCHAR(500) NOT NULL,
+  file_name VARCHAR(500) NOT NULL,
+  file_path VARCHAR(1000) NOT NULL,
   file_size INTEGER NOT NULL,
-  file_type TEXT NOT NULL,
+  file_type VARCHAR(100) NOT NULL,
   classification_id INTEGER REFERENCES classification_plan(id),
   user_id INTEGER REFERENCES users(id),
-  status TEXT DEFAULT 'draft',
-  confidentiality_level TEXT DEFAULT 'interne',
-  metadata TEXT,
+  status VARCHAR(50) DEFAULT 'draft',
+  confidentiality_level VARCHAR(50) DEFAULT 'interne',
+  metadata JSONB,
   version INTEGER DEFAULT 1,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Table des métadonnées
-CREATE TABLE IF NOT EXISTS document_metadata (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+CREATE TABLE document_metadata (
+  id SERIAL PRIMARY KEY,
   document_id INTEGER REFERENCES documents(id) ON DELETE CASCADE,
-  key TEXT NOT NULL,
+  key VARCHAR(255) NOT NULL,
   value TEXT NOT NULL,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Index pour optimisation des recherches
-CREATE INDEX IF NOT EXISTS idx_documents_index ON documents(index_alphanum);
-CREATE INDEX IF NOT EXISTS idx_documents_title ON documents(title);
-CREATE INDEX IF NOT EXISTS idx_documents_classification ON documents(classification_id);
+CREATE INDEX idx_documents_index ON documents(index_alphanum);
+CREATE INDEX idx_documents_title ON documents(title);
+CREATE INDEX idx_documents_classification ON documents(classification_id);
+CREATE INDEX idx_documents_metadata ON documents USING gin(metadata);
 `;
 
 // Données initiales
@@ -99,63 +85,59 @@ INSERT INTO classification_plan (code, name, description, path) VALUES
 ('RH', 'Ressources Humaines', 'Catégorie principale RH', 'RH'),
 ('RH-CTR', 'Contrats', 'Contrats de travail', 'RH/RH-CTR'),
 ('RH-DOS', 'Dossiers Personnel', 'Dossiers individuels', 'RH/RH-DOS'),
-('RH-RAP', 'Rapports', 'Rapports d activite', 'RH/RH-RAP'),
-('RH-POL', 'Politiques', 'Politiques RH', 'RH/RH-POL');
+('RH-RAP', 'Rapports', 'Rapports d''activité', 'RH/RH-RAP'),
+('RH-POL', 'Politiques', 'Politiques RH', 'RH/RH-POL')
+ON CONFLICT (code) DO NOTHING;
 
 -- Utilisateur admin par défaut (mot de passe: admin123)
 INSERT INTO users (email, password, first_name, last_name, role) VALUES
 ('admin@dgrh.gov.ga', '$2a$10$8A5/5uW5eB0q3p6p8Y8Zz.ZrV8V5rV8V5rV8V5rV8V5rV8V5rV8V2', 'Admin', 'System', 'admin'),
-('user@dgrh.gov.ga', '$2a$10$8A5/5uW5eB0q3p6p8Y8Zz.ZrV8V5rV8V5rV8V5rV8V5rV8V5rV8V2', 'Utilisateur', 'Test', 'user');
+('user@dgrh.gov.ga', '$2a$10$8A5/5uW5eB0q3p6p8Y8Zz.ZrV8V5rV8V5rV8V5rV8V5rV8V5rV8V2', 'Utilisateur', 'Test', 'user')
+ON CONFLICT (email) DO NOTHING;
 `;
 
-// Exécuter la migration
-db.exec(schemaSQL, (err) => {
-  if (err) {
-    console.error('❌ Erreur lors de la création des tables:', err.message);
-    db.close();
+// Fonction pour exécuter la migration
+async function runMigration() {
+  try {
+    console.log('🗑️ Suppression des tables existantes...');
+    await pool.query(dropSQL);
+    console.log('✅ Tables supprimées avec succès');
+
+    console.log('📋 Création des tables...');
+    await pool.query(schemaSQL);
+    console.log('✅ Tables créées avec succès');
+
+    console.log('📝 Insertion des données initiales...');
+    await pool.query(seedSQL);
+    console.log('✅ Données initiales insérées avec succès');
+
+    // Vérifier les tables créées
+    const tablesResult = await pool.query(`
+      SELECT tablename FROM pg_tables
+      WHERE schemaname = 'public'
+      ORDER BY tablename
+    `);
+    console.log('\n📋 Tables dans la base de données:');
+    tablesResult.rows.forEach(row => {
+      console.log('   -', row.tablename);
+    });
+
+    // Compter les enregistrements par table
+    const tablesToCount = ['users', 'classification_plan', 'documents'];
+    console.log('\n📊 Statistiques:');
+    for (const tableName of tablesToCount) {
+      const countResult = await pool.query(`SELECT COUNT(*) as count FROM ${tableName}`);
+      console.log(`   - ${tableName}: ${countResult.rows[0].count} enregistrement(s)`);
+    }
+
+    console.log('\n🎉 Migration PostgreSQL terminée avec succès!');
+    console.log('💡 Vous pouvez maintenant démarrer le serveur avec: npm run dev');
+
+  } catch (error) {
+    console.error('❌ Erreur lors de la migration:', error.message);
     process.exit(1);
   }
-  
-  console.log('✅ Tables créées avec succès');
-  
-  // Insérer les données initiales
-  db.exec(seedSQL, (err) => {
-    if (err) {
-      console.error('❌ Erreur lors de l insertion des données:', err.message);
-    } else {
-      console.log('✅ Données initiales insérées avec succès');
-    }
-    
-    // Vérifier les tables créées
-    db.all("SELECT name FROM sqlite_master WHERE type='table'", (err, tables) => {
-      if (err) {
-        console.error('❌ Erreur lors de la vérification des tables:', err.message);
-      } else {
-        console.log('\n📋 Tables dans la base de données:');
-        tables.forEach(table => {
-          console.log('   -', table.name);
-        });
-      }
-      
-      // Compter les enregistrements par table
-      const tablesToCount = ['users', 'classification_plan', 'documents'];
-      let countCompleted = 0;
-      
-      console.log('\n📊 Statistiques:');
-      tablesToCount.forEach(tableName => {
-        db.get(`SELECT COUNT(*) as count FROM ${tableName}`, (err, row) => {
-          if (!err) {
-            console.log(`   - ${tableName}: ${row.count} enregistrement(s)`);
-          }
-          countCompleted++;
-          
-          if (countCompleted === tablesToCount.length) {
-            db.close();
-            console.log('\n🎉 Migration SQLite terminée avec succès!');
-            console.log('💡 Vous pouvez maintenant démarrer le serveur avec: npm run dev');
-          }
-        });
-      });
-    });
-  });
-});
+}
+
+// Exécuter la migration
+runMigration();

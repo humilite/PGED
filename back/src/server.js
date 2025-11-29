@@ -3,7 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import 'dotenv/config';
 
-import { testConnection } from './config/database.js';
+import { connectDB } from './config/database.js';
 
 // Import des routes
 import authRoutes from './routes/authRoutes.js';
@@ -40,7 +40,7 @@ app.get('/api/health', (req, res) => {
 // Route de test de base de données
 app.get('/api/test-db', async (req, res) => {
   try {
-    await testConnection();
+    await connectDB();
     res.json({ status: 'OK', message: 'Connexion DB réussie' });
   } catch (error) {
     res.status(500).json({ status: 'ERROR', message: error.message });
@@ -67,5 +67,5 @@ app.listen(PORT, async () => {
   console.log(`📊 Environment: ${process.env.NODE_ENV}`);
   
   // Tester la connexion à la base de données
-  await testConnection();
+  await connectDB();
 });

@@ -7,6 +7,7 @@ import Upload from './pages/upload';
 import DocumentView from './pages/documentView';
 import EditDocument from './pages/editDocument';
 import AdminDashboard from './pages/admin/admindashboard';
+import UsersPage from './pages/admin/users';
 // Supprimez l'import Reports s'il n'existe pas
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Layout from './components/Layout';
@@ -71,7 +72,15 @@ const App = () => {
               </Layout>
             </ProtectedRoute>
           } />
-          
+
+          <Route path="/admin/users" element={
+            <ProtectedRoute>
+              <Layout>
+                <UsersPage />
+              </Layout>
+            </ProtectedRoute>
+          } />
+
           {/* Supprimez la route Reports si le composant n'existe pas */}
         </Routes>
       </Router>

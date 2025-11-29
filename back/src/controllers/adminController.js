@@ -1,5 +1,5 @@
-const { pool } = require('../config/database');
-const bcrypt = require('bcryptjs');
+import pool from '../config/database.js';
+import bcrypt from 'bcryptjs';
 
 const getUsers = async (req, res) => {
   try {
@@ -49,6 +49,11 @@ const getUsers = async (req, res) => {
 const createUser = async (req, res) => {
   try {
     const { email, password, first_name, last_name, role } = req.body;
+
+    // Validation des champs requis
+    if (!email || !password || !first_name || !last_name) {
+      return res.status(400).json({ error: 'Tous les champs requis doivent être fournis (email, password, first_name, last_name)' });
+    }
 
     // Vérifier si l'email existe déjà
     const existingUser = await pool.query(
