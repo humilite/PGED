@@ -200,6 +200,12 @@ export const usersAPI = {
   delete: async (id) => {
     const response = await api.delete(`/users/${id}`);
     return response.data;
+  },
+
+  // Changer le mot de passe
+  changePassword: async (passwordData) => {
+    const response = await api.put('/users/change-password', passwordData);
+    return response.data;
   }
 };
 

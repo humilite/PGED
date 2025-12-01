@@ -34,8 +34,14 @@ const authController = {
                 });
             }
 
-            // Vérifier le mot de passe avec bcrypt
-            const isPasswordValid = await bcrypt.compare(password, user.password);
+            // Vérifier le mot de passe avec bcrypt ou en clair (pour compatibilité temporaire)
+            let isPasswordValid = false;
+            try {
+                isPasswordValid = await bcrypt.compare(password, user.password);
+            } catch (error) {
+                // Si bcrypt échoue, vérifier en clair (mot de passe non hashé)
+                isPasswordValid = (user.password === password);
+            }
 
             if (!isPasswordValid) {
                 return res.status(401).json({

@@ -70,10 +70,19 @@ app.use((err, req, res, next) => {
 
 // Connexion à PostgreSQL et démarrage du serveur
 const startServer = async () => {
-  // Connexion à PostgreSQL (optionnel pour les tests JWT)
-  const dbConnected = await connectDB();
-  if (!dbConnected) {
-    console.warn('⚠️  Connexion PostgreSQL échouée - mode sans base de données activé');
+  // Test de connexion à PostgreSQL
+  try {
+    const connected = await connectDB();
+    if (connected) {
+      console.log('✅ Connexion à PostgreSQL réussie');
+    } else {
+      console.error('❌ Erreur de connexion à PostgreSQL');
+      console.warn('⚠️  Mode sans base de données activé');
+      console.warn('⚠️  Certaines fonctionnalités peuvent ne pas fonctionner');
+    }
+  } catch (error) {
+    console.error('❌ Erreur de connexion à PostgreSQL:', error.message);
+    console.warn('⚠️  Mode sans base de données activé');
     console.warn('⚠️  Certaines fonctionnalités peuvent ne pas fonctionner');
   }
 

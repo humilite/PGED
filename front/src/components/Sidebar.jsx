@@ -30,6 +30,7 @@ const Sidebar = ({ onClose }) => {
     { path: '/search', label: 'Recherche', icon: Search },
     { path: '/classifications', label: 'Classifications', icon: FolderOpen },
     { path: '/archives', label: 'Archives', icon: Archive },
+    { path: '/profile', label: 'Profil', icon: User },
   ];
 
   // Menu admin seulement

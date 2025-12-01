@@ -55,7 +55,7 @@ class User {
 
   // Mettre à jour un utilisateur
   static async update(id, updateData) {
-    const { first_name, last_name, role, department, is_active } = updateData;
+    const { first_name, last_name, role, department, is_active, password } = updateData;
 
     // Construire la requête dynamiquement pour éviter les valeurs undefined
     const setParts = [];
@@ -81,6 +81,10 @@ class User {
     if (is_active !== undefined) {
       setParts.push(`is_active = $${paramIndex++}`);
       values.push(is_active);
+    }
+    if (password !== undefined) {
+      setParts.push(`password = $${paramIndex++}`);
+      values.push(password);
     }
 
     if (setParts.length === 0) {
@@ -108,12 +112,16 @@ class User {
 
   // Mettre à jour le dernier login
   static async updateLastLogin(id) {
-    const query = `UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = $1`;
+    const query = `
+      UPDATE users
+      SET last_login = CURRENT_TIMESTAMP
+      WHERE id = $1
+    `;
 
     try {
       await pool.query(query, [id]);
     } catch (error) {
-      throw new Error(`Erreur mise à jour dernier login: ${error.message}`);
+      throw new Error(`Erreur lors de la mise à jour de la dernière connexion: ${error.message}`);
     }
   }
 

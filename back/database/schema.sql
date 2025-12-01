@@ -68,4 +68,9 @@ INSERT INTO classification_plan (code, name, description, path) VALUES
 
 -- Utilisateur admin par défaut
 INSERT INTO users (email, password, first_name, last_name, role) VALUES
-('admin@dgrh.gov.ga', '$2a$10$xyz123', 'Admin', 'System', 'admin');
+('admin@dgrh.gov.ga', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Admin', 'System', 'admin');
+
+-- Utilisateurs de test
+INSERT INTO users (email, password, first_name, last_name, role) VALUES
+('user@dgrh.gov.ga', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'User', 'Test', 'user'),
+('gestionnaire@dgrh.gov.ga', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Gestionnaire', 'Test', 'gestionnaire');

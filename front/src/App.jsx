@@ -4,6 +4,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Search from './pages/search';
 import Upload from './pages/upload';
+import Profile from './pages/Profile';
 import DocumentView from './pages/documentView';
 import EditDocument from './pages/editDocument';
 import AdminDashboard from './pages/admin/admindashboard';
@@ -55,6 +56,14 @@ const App = () => {
             <ProtectedRoute>
               <Layout>
                 <Upload />
+              </Layout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <Layout>
+                <Profile />
               </Layout>
             </ProtectedRoute>
           } />
