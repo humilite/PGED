@@ -103,41 +103,52 @@ const authController = {
 
     refreshToken: async (req, res) => {
         try {
-            // L'utilisateur est déjà authentifié via le middleware
-            const user = req.user;
+            // Extraire le token du header Authorization
+            const authHeader = req.headers['authorization'];
+            const token = authHeader && authHeader.split(' ')[1];
 
-            if (!user) {
+            if (!token) {
                 return res.status(401).json({
                     success: false,
-                    error: 'Utilisateur non authentifié'
+                    error: 'Token requis'
                 });
             }
 
+            // Décoder le token (même si expiré)
+            const decoded = jwt.decode(token);
+
+            if (!decoded) {
+                return res.status(401).json({
+                    success: false,
+                    error: 'Token invalide'
+                });
+            }
+
+            // Générer un nouveau token
             const secret = process.env.JWT_SECRET || JWT_CONFIG.fallbackSecret;
             const expiresIn = process.env.JWT_EXPIRES_IN || '24h';
-
             const newToken = jwt.sign(
                 {
-                    id: user.id,
-                    email: user.email,
-                    role: user.role,
-                    name: user.name,
-                    is_active: user.is_active
+                    id: decoded.id,
+                    email: decoded.email,
+                    role: decoded.role,
+                    name: decoded.name,
+                    is_active: decoded.is_active
                 },
                 secret,
                 { expiresIn, algorithm: 'HS256' }
             );
 
-            console.log(`🔄 Token rafraîchi pour l'utilisateur: ${user.email}`);
+            console.log(`🔄 Token rafraîchi pour l'utilisateur: ${decoded.email}`);
 
             res.json({
                 success: true,
                 token: newToken,
                 user: {
-                    id: user.id,
-                    email: user.email,
-                    name: user.name,
-                    role: user.role
+                    id: decoded.id,
+                    email: decoded.email,
+                    name: decoded.name,
+                    role: decoded.role
                 }
             });
 
