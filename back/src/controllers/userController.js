@@ -207,8 +207,13 @@ export const changePassword = async (req, res) => {
 
     console.log('Change password request:', { userId, hasCurrentPassword: !!currentPassword, hasNewPassword: !!newPassword });
 
-    if (!currentPassword || !newPassword) {
-      return res.status(400).json({ error: 'Le mot de passe actuel et le nouveau mot de passe sont requis' });
+    // Validation robuste des champs requis
+    if (!currentPassword || typeof currentPassword !== 'string' || currentPassword.trim() === '') {
+      return res.status(400).json({ error: 'Le mot de passe actuel est requis et doit être une chaîne non vide' });
+    }
+
+    if (!newPassword || typeof newPassword !== 'string' || newPassword.trim() === '') {
+      return res.status(400).json({ error: 'Le nouveau mot de passe est requis et doit être une chaîne non vide' });
     }
 
     // Validation du nouveau mot de passe (au moins 6 caractères)
@@ -216,8 +221,8 @@ export const changePassword = async (req, res) => {
       return res.status(400).json({ error: 'Le nouveau mot de passe doit contenir au moins 6 caractères' });
     }
 
-    // Récupérer l'utilisateur pour vérifier le mot de passe actuel
-    const user = await User.findById(userId);
+    // Récupérer l'utilisateur avec le mot de passe pour vérification
+    const user = await User.findByIdWithPassword(userId);
     if (!user) {
       return res.status(404).json({ error: 'Utilisateur non trouvé' });
     }

@@ -53,6 +53,18 @@ class User {
     }
   }
 
+  // Trouver un utilisateur par ID avec le mot de passe (pour changement de mot de passe)
+  static async findByIdWithPassword(id) {
+    const query = `SELECT * FROM users WHERE id = $1 AND is_active = true`;
+
+    try {
+      const result = await pool.query(query, [id]);
+      return result.rows[0];
+    } catch (error) {
+      throw new Error(`Erreur lors de la recherche par ID avec mot de passe: ${error.message}`);
+    }
+  }
+
   // Mettre à jour un utilisateur
   static async update(id, updateData) {
     const { first_name, last_name, role, department, is_active, password } = updateData;
