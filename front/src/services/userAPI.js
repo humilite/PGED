@@ -9,6 +9,16 @@ const getAuthHeaders = () => {
   };
 };
 
+// Fonction utilitaire pour convertir camelCase en snake_case
+const toSnakeCase = (obj) => {
+  const result = {};
+  for (const [key, value] of Object.entries(obj)) {
+    const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+    result[snakeKey] = value;
+  }
+  return result;
+};
+
 const userAPI = {
   // Récupérer tous les utilisateurs (avec pagination et recherche)
   getAll: async (params = {}) => {
@@ -71,10 +81,13 @@ const userAPI = {
   // Mettre à jour un utilisateur
   update: async (id, userData) => {
     try {
+      // Convertir les données camelCase en snake_case pour l'API backend
+      const apiData = toSnakeCase(userData);
+
       const response = await fetch(`${API_BASE_URL}/users/${id}`, {
         method: 'PUT',
         headers: getAuthHeaders(),
-        body: JSON.stringify(userData),
+        body: JSON.stringify(apiData),
       });
       const data = await response.json();
 

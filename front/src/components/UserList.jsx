@@ -9,7 +9,8 @@ import {
   Building,
   CheckCircle,
   XCircle,
-  Calendar
+  Calendar,
+  Power
 } from 'lucide-react';
 import userAPI from '../services/userAPI';
 import CreateUserModal from './CreateUserModal';
@@ -24,7 +25,7 @@ const UserList = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showDeactivateModal, setShowDeactivateModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
 
   // Debug state changes
@@ -96,29 +97,32 @@ const UserList = () => {
     setError(null);
   };
 
-  // Gestionnaire d'ouverture du modal de suppression
-  const handleDeleteClick = (user) => {
+  // Gestionnaire d'ouverture du modal de désactivation
+  const handleDeactivateClick = (user) => {
     setSelectedUser(user);
-    setShowDeleteModal(true);
+    setShowDeactivateModal(true);
   };
 
-  // Gestionnaire de suppression
-  const handleDelete = async () => {
+  // Gestionnaire de désactivation
+  const handleDeactivate = async () => {
     if (!selectedUser) return;
 
     try {
       setLoading(true);
-      const response = await userAPI.delete(selectedUser.id);
+      // Appel API pour désactiver l'utilisateur
+      const response = await userAPI.update(selectedUser.id, {
+        isActive: !selectedUser.isActive // Inverser le statut actuel
+      });
 
       if (response.success) {
-        setShowDeleteModal(false);
+        setShowDeactivateModal(false);
         loadUsers(currentPage, searchTerm);
       } else {
-        setError(response.error || 'Erreur lors de la suppression');
+        setError(response.error || 'Erreur lors de la désactivation');
       }
     } catch (err) {
-      setError(err.response?.data?.error || 'Erreur lors de la suppression');
-      console.error('Erreur suppression:', err);
+      setError(err.response?.data?.error || 'Erreur lors de la désactivation');
+      console.error('Erreur désactivation:', err);
     } finally {
       setLoading(false);
     }
@@ -161,7 +165,7 @@ const UserList = () => {
       {/* En-tête */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Gestion des Utilisateurs</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Gestion des utilisateurs</h1>
           <p className="text-gray-600">Créez et gérez les utilisateurs du système</p>
         </div>
         <button
@@ -284,11 +288,15 @@ const UserList = () => {
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => handleDeleteClick(user)}
-                        className="text-red-600 hover:text-red-900 transition-colors"
-                        title="Supprimer"
+                        onClick={() => handleDeactivateClick(user)}
+                        className={`transition-colors ${
+                          user.isActive 
+                            ? 'text-orange-600 hover:text-orange-900' 
+                            : 'text-green-600 hover:text-green-900'
+                        }`}
+                        title={user.isActive ? 'Désactiver' : 'Activer'}
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Power className="w-4 h-4" />
                       </button>
                     </div>
                   </td>
@@ -403,38 +411,49 @@ const UserList = () => {
         />
       )}
 
-      {/* Modal de confirmation de suppression */}
-      {showDeleteModal && selectedUser && (
+      {/* Modal de confirmation de désactivation */}
+      {showDeactivateModal && selectedUser && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
           <div className="relative bg-white rounded-lg shadow-xl w-full max-w-md">
             <div className="p-6">
-              <div className="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full mb-4">
-                <Trash2 className="w-6 h-6 text-red-600" />
+              <div className={`flex items-center justify-center w-12 h-12 mx-auto rounded-full mb-4 ${
+                selectedUser.isActive ? 'bg-orange-100' : 'bg-green-100'
+              }`}>
+                <Power className={`w-6 h-6 ${selectedUser.isActive ? 'text-orange-600' : 'text-green-600'}`} />
               </div>
               
               <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">
-                Confirmer la suppression
+                {selectedUser.isActive ? 'Désactiver' : 'Activer'} l'utilisateur
               </h3>
               
               <p className="text-gray-600 text-center mb-6">
-                Êtes-vous sûr de vouloir supprimer l'utilisateur <strong>{selectedUser.firstName} {selectedUser.lastName}</strong> ?
+                Êtes-vous sûr de vouloir {selectedUser.isActive ? 'désactiver' : 'activer'} l'utilisateur{' '}
+                <strong>{selectedUser.firstName} {selectedUser.lastName}</strong> ?
                 <br />
-                <span className="text-sm text-red-600">Cette action est irréversible.</span>
+                <span className={`text-sm ${selectedUser.isActive ? 'text-orange-600' : 'text-green-600'}`}>
+                  {selectedUser.isActive 
+                    ? "L'utilisateur ne pourra plus se connecter." 
+                    : "L'utilisateur pourra à nouveau se connecter."}
+                </span>
               </p>
 
               <div className="flex justify-center gap-3">
                 <button
-                  onClick={() => setShowDeleteModal(false)}
+                  onClick={() => setShowDeactivateModal(false)}
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
                 >
                   Annuler
                 </button>
                 <button
-                  onClick={handleDelete}
+                  onClick={handleDeactivate}
                   disabled={loading}
-                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg disabled:opacity-50 transition-colors"
+                  className={`px-4 py-2 text-sm font-medium text-white rounded-lg disabled:opacity-50 transition-colors ${
+                    selectedUser.isActive 
+                      ? 'bg-orange-600 hover:bg-orange-700' 
+                      : 'bg-green-600 hover:bg-green-700'
+                  }`}
                 >
-                  {loading ? 'Suppression...' : 'Supprimer'}
+                  {loading ? 'Traitement...' : (selectedUser.isActive ? 'Désactiver' : 'Activer')}
                 </button>
               </div>
             </div>

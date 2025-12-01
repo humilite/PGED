@@ -1,5 +1,7 @@
 // authController.js - Version avec export par défaut
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
+import User from '../models/user.js';
 
 // Configuration JWT (doit correspondre à authMiddleware.js)
 const JWT_CONFIG = {
@@ -14,31 +16,36 @@ const authController = {
             const { email, password } = req.body;
             console.log(`🔐 Tentative de connexion: ${email}`);
 
-            const mockUsers = {
-                'admin@dgrh.gov.ga': { 
-                    id: 1, 
-                    email: 'admin@dgrh.gov.ga', 
-                    password: 'admin123', 
-                    name: 'Administrateur', 
-                    role: 'admin' 
-                },
-                'user@dgrh.gov.ga': { 
-                    id: 2, 
-                    email: 'user@dgrh.gov.ga', 
-                    password: 'user123', 
-                    name: 'Utilisateur', 
-                    role: 'user' 
-                }
-            };
+            // Rechercher l'utilisateur dans la base de données
+            const user = await User.findByEmail(email);
 
-            const user = mockUsers[email];
-
-            if (!user || user.password !== password) {
-                return res.status(401).json({ 
+            if (!user) {
+                return res.status(401).json({
                     success: false,
-                    error: 'Identifiants incorrects' 
+                    error: 'Identifiants incorrects'
                 });
             }
+
+            // Vérifier si le compte est actif
+            if (!user.is_active) {
+                return res.status(401).json({
+                    success: false,
+                    error: 'Compte désactivé'
+                });
+            }
+
+            // Vérifier le mot de passe avec bcrypt
+            const isPasswordValid = await bcrypt.compare(password, user.password);
+
+            if (!isPasswordValid) {
+                return res.status(401).json({
+                    success: false,
+                    error: 'Identifiants incorrects'
+                });
+            }
+
+            // Mettre à jour la dernière connexion
+            await User.updateLastLogin(user.id);
 
             const secret = process.env.JWT_SECRET || JWT_CONFIG.fallbackSecret;
             const expiresIn = process.env.JWT_EXPIRES_IN || '24h';
@@ -48,7 +55,8 @@ const authController = {
                     id: user.id,
                     email: user.email,
                     role: user.role,
-                    name: user.name
+                    name: `${user.first_name} ${user.last_name}`,
+                    is_active: user.is_active
                 },
                 secret,
                 { expiresIn, algorithm: 'HS256' }
@@ -60,7 +68,7 @@ const authController = {
                 user: {
                     id: user.id,
                     email: user.email,
-                    name: user.name,
+                    name: `${user.first_name} ${user.last_name}`,
                     role: user.role
                 },
                 redirect: user.role === 'admin' ? '/admin-dashboard' : '/dashboard'

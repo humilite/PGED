@@ -11,7 +11,8 @@ import {
   User,
   X,
   Download,
-  LogOut
+  LogOut,
+  Shield
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -20,13 +21,18 @@ const Sidebar = ({ onClose }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const menuItems = [
+  // Menu de base pour tous les utilisateurs
+  const baseMenuItems = [
     { path: '/dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
     { path: '/documents', label: 'Mes documents', icon: FileText },
     { path: '/search', label: 'Recherche', icon: Search },
     { path: '/classifications', label: 'Classifications', icon: FolderOpen },
     { path: '/archives', label: 'Archives', icon: Archive },
-    { path: '/admin', label: 'Paramètres', icon: Settings },
+  ];
+
+  // Menu admin seulement
+  const adminMenuItems = [
+    { path: '/admin', label: 'Paramètres', icon: Settings, adminOnly: true },
   ];
 
   const quickActions = [
@@ -34,6 +40,26 @@ const Sidebar = ({ onClose }) => {
   ];
 
   const isActive = (path) => location.pathname === path;
+
+  // Fonction pour obtenir le nom complet de l'utilisateur
+  const getUserDisplayName = () => {
+    if (!user) return 'Utilisateur';
+    
+    // Essayer différents formats de nom selon la structure de l'objet user
+    if (user.prenom && user.nom) {
+      return `${user.prenom} ${user.nom}`;
+    } else if (user.firstName && user.lastName) {
+      return `${user.firstName} ${user.lastName}`;
+    } else if (user.fullName) {
+      return user.fullName;
+    } else if (user.name) {
+      return user.name;
+    } else if (user.email) {
+      return user.email.split('@')[0]; // Retourne la partie avant @ de l'email
+    } else {
+      return 'Utilisateur';
+    }
+  };
 
   // Fonction de déconnexion
   const handleLogout = async () => {
@@ -44,6 +70,9 @@ const Sidebar = ({ onClose }) => {
       console.error('Erreur lors de la déconnexion:', error);
     }
   };
+
+  // Vérifier si l'utilisateur est admin
+  const isAdmin = user?.role === 'admin';
 
   return (
     <div className="h-full bg-white text-gray-800 border-r border-gray-200 overflow-y-auto flex flex-col">
@@ -56,7 +85,7 @@ const Sidebar = ({ onClose }) => {
             </div>
             <div>
               <h1 className="text-lg font-bold text-gray-900">Archivage DGRH</h1>
-              <p className="text-xs text-gray-500">République Gabonaise</p>
+              <p className="text-xs text-gray-500">Présidence de la République</p>
             </div>
           </div>
           <button
@@ -73,14 +102,21 @@ const Sidebar = ({ onClose }) => {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="w-12 h-12 bg-linear-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center">
-              <User className="w-6 h-6 text-white" />
+              {isAdmin ? (
+                <Shield className="w-6 h-6 text-white" />
+              ) : (
+                <User className="w-6 h-6 text-white" />
+              )}
             </div>
             <div>
               <p className="text-sm text-gray-600">Bienvenue,</p>
               <p className="text-lg font-semibold text-gray-900">
-                {user?.firstName || user?.prenom || 'Utilisateur'}
+                {getUserDisplayName()}
               </p>
-              <p className="text-xs text-gray-500 capitalize">{user?.role || 'Utilisateur'}</p>
+              <p className="text-xs text-gray-500 capitalize">
+                {user?.role || 'Utilisateur'}
+                {isAdmin && ' ⭐'}
+              </p>
             </div>
           </div>
           
@@ -97,8 +133,9 @@ const Sidebar = ({ onClose }) => {
 
       {/* Main Menu */}
       <nav className="flex-1 px-4 py-6">
+        {/* Menu principal pour tous les utilisateurs */}
         <ul className="space-y-1">
-          {menuItems.map((item) => {
+          {baseMenuItems.map((item) => {
             const IconComponent = item.icon;
             return (
               <li key={item.path}>
@@ -117,6 +154,39 @@ const Sidebar = ({ onClose }) => {
             );
           })}
         </ul>
+
+        {/* Section Admin séparée si l'utilisateur est admin */}
+        {isAdmin && (
+          <div className="mt-8 pt-6 border-t border-gray-200">
+            <div className="px-4 mb-3">
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center">
+                <Shield className="w-3 h-3 mr-1" />
+                Administration
+              </h3>
+            </div>
+            <ul className="space-y-1">
+              {adminMenuItems.map((item) => {
+                const IconComponent = item.icon;
+                return (
+                  <li key={item.path}>
+                    <Link
+                      to={item.path}
+                      className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+                        isActive(item.path)
+                          ? 'bg-blue-100 text-blue-700 border-r-2 border-blue-600'
+                          : 'text-gray-600 hover:bg-blue-50 hover:text-blue-900'
+                      }`}
+                    >
+                      <IconComponent className="w-5 h-5" />
+                      <span className="font-medium">{item.label}</span>
+                      <Shield className="w-3 h-3 text-blue-500 ml-auto" />
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
       </nav>
 
       {/* Quick Actions */}
