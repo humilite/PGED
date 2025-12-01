@@ -96,7 +96,7 @@ const Sidebar = ({ onClose }) => {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
-                <FileText className="w-6 w-6 text-white" />
+                <FileText className="w-6  text-white" />
               </div>
               <div>
                 <h1 className="text-lg font-bold text-gray-900">Archivage DGRH</h1>
@@ -116,7 +116,7 @@ const Sidebar = ({ onClose }) => {
         <div className="p-6 border-b border-gray-200 bg-gray-50">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center">
+              <div className="w-12 h-12 bg-linear-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center">
                 {isAdmin ? (
                   <Shield className="w-6 h-6 text-white" />
                 ) : (
