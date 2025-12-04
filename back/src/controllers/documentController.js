@@ -4,14 +4,14 @@ import { generateDocumentIndex } from '../utils/indexGenerator.js';
 export const uploadDocument = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { title, classification_id, confidentiality_level } = req.body;
+    const { title, classification_id, confidentiality_level, classification_path } = req.body;
 
     if (!req.file) {
       return res.status(400).json({ error: 'Aucun fichier uploadé' });
     }
 
-    // Générer l'index alphanumérique
-    const indexAlphanum = await generateDocumentIndex(classification_id);
+    // Générer l'index alphanumérique avec le chemin complet
+    const indexAlphanum = await generateDocumentIndex(classification_path ? JSON.parse(classification_path) : null);
 
     // Créer le document via le modèle
     const documentData = {
@@ -161,6 +161,20 @@ export const getDocumentHistory = async (req, res) => {
     res.json({ history });
   } catch (error) {
     console.error('Get history error:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+};
+
+export const getDocumentStats = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const userRole = req.user.role;
+
+    const stats = await Document.getGeneralStats(userId, userRole);
+
+    res.json(stats);
+  } catch (error) {
+    console.error('Get stats error:', error);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 };

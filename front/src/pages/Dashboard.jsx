@@ -52,20 +52,27 @@ const Dashboard = () => {
     try {
       setLoading(true);
       const documentsData = await documentsAPI.getStats();
+
+      // Utiliser les données réelles ou des valeurs par défaut si non disponibles
       setStats({
-        totalDocuments: documentsData.total || 156,
-        documentsApprouves: documentsData.approved || 102,
-        documentsEnAttente: documentsData.pending || 31,
-        documentsRejetes: documentsData.rejected || 23
+        totalDocuments: documentsData.totalDocuments || 0,
+        documentsApprouves: documentsData.documentsApprouves || 0,
+        documentsEnAttente: documentsData.documentsEnAttente || 0,
+        documentsRejetes: documentsData.documentsRejetes || 0
       });
     } catch (error) {
       console.error('Erreur chargement dashboard:', error);
+
+      // En cas d'erreur, afficher un message d'erreur à l'utilisateur
       setStats({
-        totalDocuments: 156,
-        documentsApprouves: 102,
-        documentsEnAttente: 31,
-        documentsRejetes: 23
+        totalDocuments: 0,
+        documentsApprouves: 0,
+        documentsEnAttente: 0,
+        documentsRejetes: 0
       });
+
+      // Afficher une notification d'erreur
+      alert('Erreur lors du chargement des statistiques. Veuillez réessayer plus tard.');
     } finally {
       setLoading(false);
     }

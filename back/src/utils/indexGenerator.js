@@ -1,36 +1,35 @@
 // CORRECTION : Un seul import avec extension .js
 import { query } from '../config/database.js';
 
-export const generateDocumentIndex = async (classificationId) => {
+export const generateDocumentIndex = async (classificationPath) => {
   try {
-    // Utiliser la table 'classifications' au lieu de 'classification_plan'
-    const classificationResult = await query(
-      'SELECT code FROM classifications WHERE id = $1',
-      [classificationId]
-    );
-
-    if (classificationResult.rows.length === 0) {
-      throw new Error('Classification non trouvée');
+    if (!classificationPath || !Array.isArray(classificationPath) || classificationPath.length === 0) {
+      throw new Error('Chemin de classification requis');
     }
 
-    const classificationCode = classificationResult.rows[0].code;
+    // Extraire tous les codes du chemin hiérarchique
+    const codes = classificationPath.map(item => item.code).join('-');
     const year = new Date().getFullYear();
+
+    // Utiliser l'ID de la classification feuille pour compter les documents
+    const leafClassificationId = classificationPath[classificationPath.length - 1].id;
 
     // Utiliser 'categorie_id' au lieu de 'classification_id'
     const countResult = await query(
-      `SELECT COUNT(*) FROM documents 
-       WHERE categorie_id = $1 
+      `SELECT COUNT(*) FROM documents
+       WHERE categorie_id = $1
        AND EXTRACT(YEAR FROM created_at) = $2`,
-      [classificationId, year]
+      [leafClassificationId, year]
     );
 
     const sequence = parseInt(countResult.rows[0].count) + 1;
-    
-    return `${classificationCode}-${year}-${sequence.toString().padStart(4, '0')}`;
-    
+
+    return `${codes}-${year}-${sequence.toString().padStart(4, '0')}`;
+
   } catch (error) {
     console.error('Erreur génération index:', error);
     // Fallback en cas d'erreur
+    const year = new Date().getFullYear();
     return `DOC-${year}-${Date.now().toString().slice(-6)}`;
   }
 };

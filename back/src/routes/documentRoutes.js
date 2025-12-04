@@ -5,7 +5,8 @@ import {
   getDocumentById,
   updateDocument,
   downloadDocument,
-  getDocumentHistory
+  getDocumentHistory,
+  getDocumentStats
 } from '../controllers/documentController.js';
 import { authenticateToken } from '../middleware/authMiddleware.js';
 import { upload } from '../config/multer.js';
@@ -16,6 +17,7 @@ router.use(authenticateToken);
 
 router.post('/upload', upload.single('file'), uploadDocument);
 router.get('/search', searchDocuments);
+router.get('/stats', getDocumentStats);
 router.get('/dashboard/stats', async (req, res) => {
   try {
     const userId = req.user.userId;

@@ -318,6 +318,40 @@ class Document {
     }
   }
 
+  // Obtenir les statistiques générales
+  static async getGeneralStats(userId, userRole) {
+    try {
+      let totalQuery = `SELECT COUNT(*) as total FROM documents WHERE is_deleted = false`;
+      let approvedQuery = `SELECT COUNT(*) as approved FROM documents WHERE status = 'approved' AND is_deleted = false`;
+      let pendingQuery = `SELECT COUNT(*) as pending FROM documents WHERE status = 'pending' AND is_deleted = false`;
+      let rejectedQuery = `SELECT COUNT(*) as rejected FROM documents WHERE status = 'rejected' AND is_deleted = false`;
+
+      // Restriction pour les non-admins
+      if (userRole !== 'admin') {
+        totalQuery += ` AND (confidentiality_level != 'confidentiel' OR user_id = $1)`;
+        approvedQuery += ` AND (confidentiality_level != 'confidentiel' OR user_id = $1)`;
+        pendingQuery += ` AND (confidentiality_level != 'confidentiel' OR user_id = $1)`;
+        rejectedQuery += ` AND (confidentiality_level != 'confidentiel' OR user_id = $1)`;
+      }
+
+      const [totalResult, approvedResult, pendingResult, rejectedResult] = await Promise.all([
+        pool.query(totalQuery, userRole !== 'admin' ? [userId] : []),
+        pool.query(approvedQuery, userRole !== 'admin' ? [userId] : []),
+        pool.query(pendingQuery, userRole !== 'admin' ? [userId] : []),
+        pool.query(rejectedQuery, userRole !== 'admin' ? [userId] : [])
+      ]);
+
+      return {
+        totalDocuments: parseInt(totalResult.rows[0].total),
+        documentsApprouves: parseInt(approvedResult.rows[0].approved),
+        documentsEnAttente: parseInt(pendingResult.rows[0].pending),
+        documentsRejetes: parseInt(rejectedResult.rows[0].rejected)
+      };
+    } catch (error) {
+      throw new Error(`Erreur lors de la récupération des stats générales: ${error.message}`);
+    }
+  }
+
   // Obtenir les statistiques du tableau de bord
   static async getDashboardStats(userId, userRole) {
     try {

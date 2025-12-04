@@ -13,7 +13,8 @@ import {
   Download,
   LogOut,
   Shield,
-  AlertTriangle
+  AlertTriangle,
+  Zap
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -171,6 +172,39 @@ const Sidebar = ({ onClose }) => {
             })}
           </ul>
 
+          {/* Section Actions Rapides */}
+          <div className="mt-8 pt-6 border-t border-gray-200">
+            <div className="px-4 mb-3">
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center">
+                <Zap className="w-3 h-3 mr-1" />
+                Actions Rapides
+              </h3>
+            </div>
+            <div className="space-y-2 px-4">
+              {quickActions.map((action) => {
+                const IconComponent = action.icon;
+                return (
+                  <Link
+                    key={action.path}
+                    to={action.path}
+                    className="flex items-center space-x-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors group"
+                  >
+                    <IconComponent className="w-4 h-4 text-green-600 group-hover:text-green-800" />
+                    <span className="text-sm font-medium text-green-700 group-hover:text-green-900">
+                      {action.label}
+                    </span>
+                  </Link>
+                );
+              })}
+              <button className="flex items-center space-x-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors group w-full">
+                <Download className="w-4 h-4 text-blue-600 group-hover:text-blue-800" />
+                <span className="text-sm font-medium text-blue-700 group-hover:text-blue-900">
+                  Exporter les données
+                </span>
+              </button>
+            </div>
+          </div>
+
           {/* Section Admin séparée si l'utilisateur est admin */}
           {isAdmin && (
             <div className="mt-8 pt-6 border-t border-gray-200">
@@ -205,34 +239,11 @@ const Sidebar = ({ onClose }) => {
           )}
         </nav>
 
-        {/* Quick Actions */}
-        <div className="px-4 py-4 border-t border-gray-200">
-          <h3 className="text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wide">
-            Actions Rapides
-          </h3>
-          <div className="space-y-2">
-            {quickActions.map((action) => {
-              const IconComponent = action.icon;
-              return (
-                <Link
-                  key={action.path}
-                  to={action.path}
-                  className="flex items-center space-x-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors group"
-                >
-                  <IconComponent className="w-4 h-4 text-green-600 group-hover:text-green-800" />
-                  <span className="text-sm font-medium text-green-700 group-hover:text-green-900">
-                    {action.label}
-                  </span>
-                </Link>
-              );
-            })}
-            <button className="flex items-center space-x-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors group w-full">
-              <Download className="w-4 h-4 text-blue-600 group-hover:text-blue-800" />
-              <span className="text-sm font-medium text-blue-700 group-hover:text-blue-900">
-                Exporter les données
-              </span>
-            </button>
-          </div>
+        {/* Version mobile footer (optionnel) */}
+        <div className="p-4 border-t border-gray-200 lg:hidden">
+          <p className="text-xs text-gray-500 text-center">
+            © {new Date().getFullYear()} Archivage DGRH
+          </p>
         </div>
       </div>
 
