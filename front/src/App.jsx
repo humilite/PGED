@@ -8,6 +8,7 @@ import Upload from './pages/upload';
 import Profile from './pages/Profile';
 import DocumentView from './pages/documentView';
 import EditDocument from './pages/editDocument';
+import DocumentsList from './pages/DocumentsList';
 import AdminDashboard from './pages/admin/admindashboard';
 import UsersPage from './pages/admin/users';
 import ClassificationPage from './pages/admin/classifications';
@@ -63,6 +64,14 @@ const App = () => {
             <ProtectedRoute>
               <Layout>
                 <Profile />
+              </Layout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/documents" element={
+            <ProtectedRoute>
+              <Layout>
+                <DocumentsList />
               </Layout>
             </ProtectedRoute>
           } />

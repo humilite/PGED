@@ -14,10 +14,10 @@ export const generateDocumentIndex = async (classificationPath) => {
     // Utiliser l'ID de la classification feuille pour compter les documents
     const leafClassificationId = classificationPath[classificationPath.length - 1].id;
 
-    // Utiliser 'categorie_id' au lieu de 'classification_id'
+    // Utiliser 'classification_id' comme dans la base de données
     const countResult = await query(
       `SELECT COUNT(*) FROM documents
-       WHERE categorie_id = $1
+       WHERE classification_id = $1
        AND EXTRACT(YEAR FROM created_at) = $2`,
       [leafClassificationId, year]
     );

@@ -3,8 +3,17 @@ import { generateDocumentIndex } from '../utils/indexGenerator.js';
 
 export const uploadDocument = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    console.log('🔍 Upload Debug - req.user:', req.user);
+    console.log('🔍 Upload Debug - req.user.id:', req.user?.id);
+
+    // Use authenticated user ID since user is already authenticated
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Utilisateur non authentifié' });
+    }
     const { title, classification_id, confidentiality_level, classification_path } = req.body;
+
+    console.log('🔍 Upload Debug - Final userId:', userId);
 
     if (!req.file) {
       return res.status(400).json({ error: 'Aucun fichier uploadé' });
@@ -30,7 +39,11 @@ export const uploadDocument = async (req, res) => {
       }
     };
 
+    console.log('🔍 Document creation - documentData:', documentData);
+
     const document = await Document.create(documentData);
+
+    console.log('🔍 Document created - result:', document);
 
     res.status(201).json({
       message: 'Document uploadé avec succès',
@@ -45,9 +58,12 @@ export const uploadDocument = async (req, res) => {
 
 export const searchDocuments = async (req, res) => {
   try {
-    const { q, type, date_from, date_to, author, classification, page = 1, limit = 10 } = req.query;
-    const userId = req.user.userId;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Utilisateur non authentifié' });
+    }
     const userRole = req.user.role;
+    const { q, type, date_from, date_to, author, classification, page = 1, limit = 10 } = req.query;
 
     const searchParams = {
       q,
@@ -75,7 +91,10 @@ export const searchDocuments = async (req, res) => {
 export const getDocumentById = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.userId;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Utilisateur non authentifié' });
+    }
     const userRole = req.user.role;
 
     const document = await Document.findById(id, userId, userRole);
@@ -96,7 +115,7 @@ export const updateDocument = async (req, res) => {
   try {
     const { id } = req.params;
     const { title, description, classification_id, confidentiality_level, status, metadata } = req.body;
-    const userId = req.user.userId;
+    const userId = req.user.id;
     const userRole = req.user.role;
 
     const updateData = {
@@ -124,24 +143,17 @@ export const updateDocument = async (req, res) => {
 export const downloadDocument = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.userId;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Utilisateur non authentifié' });
+    }
     const userRole = req.user.role;
 
-    const result = await pool.query(
-      'SELECT file_path, file_name, confidentiality_level, user_id ' +
-      'FROM documents WHERE id = $1',
-      [id]
-    );
+    // Use Document model for consistency and access control
+    const document = await Document.findById(id, userId, userRole);
 
-    if (result.rows.length === 0) {
+    if (!document) {
       return res.status(404).json({ error: 'Document non trouvé' });
-    }
-
-    const document = result.rows[0];
-
-    // Vérifier les droits d'accès
-    if (userRole !== 'admin' && document.confidentiality_level === 'confidentiel' && document.user_id !== userId) {
-      return res.status(403).json({ error: 'Accès non autorisé à ce document' });
     }
 
     res.download(document.file_path, document.file_name);
@@ -165,9 +177,60 @@ export const getDocumentHistory = async (req, res) => {
   }
 };
 
+export const getAllDocuments = async (req, res) => {
+  try {
+    const { page = 1, limit = 10 } = req.query;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Utilisateur non authentifié' });
+    }
+    const userRole = req.user.role;
+
+    const searchParams = {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      userId,
+      userRole
+    };
+
+    const result = await Document.search(searchParams);
+
+    res.json(result);
+
+  } catch (error) {
+    console.error('Get all documents error:', error);
+    res.status(500).json({ error: 'Erreur lors de la récupération des documents' });
+  }
+};
+
+export const deleteDocument = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Utilisateur non authentifié' });
+    }
+    const userRole = req.user.role;
+
+    const deletedDocument = await Document.softDelete(id, userId, userRole);
+
+    res.json({
+      message: 'Document supprimé avec succès',
+      document: deletedDocument
+    });
+
+  } catch (error) {
+    console.error('Delete document error:', error);
+    res.status(500).json({ error: 'Erreur lors de la suppression' });
+  }
+};
+
 export const getDocumentStats = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Utilisateur non authentifié' });
+    }
     const userRole = req.user.role;
 
     const stats = await Document.getGeneralStats(userId, userRole);
