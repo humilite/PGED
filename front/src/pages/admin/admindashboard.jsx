@@ -276,20 +276,6 @@ const AdminDashboard = () => {
                     <Folder className="h-5 w-5" />
                     Plan de classement
                   </Link>
-                  <Link
-                    to="/admin/statistics"
-                    className="flex items-center gap-3 p-3 text-gray-700 rounded-lg hover:bg-gray-100 font-medium transition-colors"
-                  >
-                    <BarChart3 className="h-5 w-5" />
-                    Statistiques
-                  </Link>
-                  <Link
-                    to="/admin/settings"
-                    className="flex items-center gap-3 p-3 text-gray-700 rounded-lg hover:bg-gray-100 font-medium transition-colors"
-                  >
-                    <Settings className="h-5 w-5" />
-                    Paramètres
-                  </Link>
                 </nav>
               </div>
             </div>
