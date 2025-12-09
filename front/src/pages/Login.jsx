@@ -59,7 +59,7 @@ const Login = () => {
           {/* En-tête avec le titre principal */}
           <div className="text-center text-white">
             <h1 className="text-3xl font-bold mb-3">
-              République Gabonaise
+              Présidence de la République
             </h1>
             <h2 className="text-lg font-semibold mb-2">
               Plateforme d'archivage numérique de Documents
@@ -132,29 +132,6 @@ const Login = () => {
                 </div>
               </div>
 
-              {/* Case à cocher et lien mot de passe oublié */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <input
-                    id="remember-me"
-                    name="remember-me"
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
-                  />
-                  <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
-                    Se souvenir de moi
-                  </label>
-                </div>
-                
-                <div className="text-sm">
-                  <a href="#" className="font-medium text-green-600 hover:text-green-500">
-                    Mot de passe oublié ?
-                  </a>
-                </div>
-              </div>
-
               {/* Bouton de connexion */}
               <div>
                 <button
@@ -183,7 +160,7 @@ const Login = () => {
       {/* Copyright en bas de page */}
       <div className="text-center mt-5">
         <p className="text-xs text-white text-opacity-80">
-          © 2025 République Gabonaise - DGRH
+          © 2025 Présidence de la République Gabonaise - DGRH
         </p>
       </div>
     </div>
