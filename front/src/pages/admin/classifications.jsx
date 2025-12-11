@@ -20,7 +20,7 @@ const StyledNode = styled.div`
   border-radius: 12px;
   display: inline-flex;
   align-items: center;
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  background: linear-linear(135deg, #ffffff 0%, #f8fafc 100%);
   border: 1.5px solid #e2e8f0;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -31,12 +31,12 @@ const StyledNode = styled.div`
     transform: translateY(-2px);
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
     border-color: #3b82f6;
-    background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+    background: linear-linear(135deg, #ffffff 0%, #f1f5f9 100%);
   }
   
   &.selected {
     border-color: #10b981;
-    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    background: linear-linear(135deg, #f0fdf4 0%, #dcfce7 100%);
     box-shadow: 0 4px 20px rgba(16, 185, 129, 0.15);
   }
 `;
@@ -272,11 +272,11 @@ const Button = styled.button`
   }
   
   &.btn-primary {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    background: linear-linear(135deg, #3b82f6 0%, #2563eb 100%);
     color: white;
     
     &:hover {
-      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      background: linear-linear(135deg, #2563eb 0%, #1d4ed8 100%);
       transform: translateY(-1px);
       box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
     }

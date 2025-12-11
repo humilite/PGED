@@ -354,6 +354,33 @@ const userAPI = {
       };
     }
   },
+
+  // Réinitialiser le mot de passe d'un utilisateur (admin seulement)
+  resetPassword: async (userId, newPassword) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/users/${userId}/reset-password`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ newPassword }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erreur lors de la réinitialisation du mot de passe');
+      }
+
+      return {
+        success: true,
+        data: data
+      };
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  },
 };
 
 export default userAPI;

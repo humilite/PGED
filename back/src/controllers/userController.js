@@ -247,3 +247,47 @@ export const changePassword = async (req, res) => {
     res.status(500).json({ error: 'Erreur lors du changement de mot de passe' });
   }
 };
+
+// Réinitialiser le mot de passe (admin seulement)
+export const resetPassword = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { newPassword } = req.body;
+    const userId = parseInt(id);
+
+    // Validation de l'ID utilisateur
+    if (isNaN(userId) || userId <= 0) {
+      return res.status(400).json({ error: 'ID invalide' });
+    }
+
+    console.log('Reset password request:', { userId, hasNewPassword: !!newPassword });
+
+    // Validation du nouveau mot de passe
+    if (!newPassword || typeof newPassword !== 'string' || newPassword.trim() === '') {
+      return res.status(400).json({ error: 'Le nouveau mot de passe est requis et doit être une chaîne non vide' });
+    }
+
+    // Validation du nouveau mot de passe (au moins 6 caractères)
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'Le nouveau mot de passe doit contenir au moins 6 caractères' });
+    }
+
+    // Vérifier que l'utilisateur existe
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'Utilisateur non trouvé' });
+    }
+
+    // Hacher le nouveau mot de passe
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+    // Mettre à jour le mot de passe
+    const updateResult = await User.update(userId, { password: hashedNewPassword });
+    console.log('Password reset result:', updateResult ? 'success' : 'failed');
+
+    res.json({ message: 'Mot de passe réinitialisé avec succès' });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({ error: 'Erreur lors de la réinitialisation du mot de passe' });
+  }
+};

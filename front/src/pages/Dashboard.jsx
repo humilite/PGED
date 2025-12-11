@@ -65,28 +65,28 @@ const Dashboard = () => {
   const { user } = useAuth();
 
   const COLORS = [
-    'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-    'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-    'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-    'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-    'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
+    'linear-linear(135deg, #10b981 0%, #059669 100%)',
+    'linear-linear(135deg, #f59e0b 0%, #d97706 100%)',
+    'linear-linear(135deg, #ef4444 0%, #dc2626 100%)',
+    'linear-linear(135deg, #8b5cf6 0%, #7c3aed 100%)',
+    'linear-linear(135deg, #3b82f6 0%, #2563eb 100%)'
   ];
 
   const STATUS_COLORS = {
-    'validé': 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-    'approuvé': 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-    'approved': 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-    'en attente': 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-    'pending': 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-    'rejeté': 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-    'rejected': 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
+    'validé': 'linear-linear(135deg, #10b981 0%, #059669 100%)',
+    'approuvé': 'linear-linear(135deg, #10b981 0%, #059669 100%)',
+    'approved': 'linear-linear(135deg, #10b981 0%, #059669 100%)',
+    'en attente': 'linear-linear(135deg, #f59e0b 0%, #d97706 100%)',
+    'pending': 'linear-linear(135deg, #f59e0b 0%, #d97706 100%)',
+    'rejeté': 'linear-linear(135deg, #ef4444 0%, #dc2626 100%)',
+    'rejected': 'linear-linear(135deg, #ef4444 0%, #dc2626 100%)'
   };
 
   const CONFIDENTIALITY_COLORS = {
-    'public': 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-    'interne': 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-    'confidentiel': 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-    'secret': 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
+    'public': 'linear-linear(135deg, #10b981 0%, #059669 100%)',
+    'interne': 'linear-linear(135deg, #3b82f6 0%, #2563eb 100%)',
+    'confidentiel': 'linear-linear(135deg, #f59e0b 0%, #d97706 100%)',
+    'secret': 'linear-linear(135deg, #ef4444 0%, #dc2626 100%)'
   };
 
   useEffect(() => {
@@ -250,7 +250,7 @@ const Dashboard = () => {
 
   const getConfidentialityColor = (level) => {
     const normalizedLevel = normalizeConfidentiality(level);
-    return CONFIDENTIALITY_COLORS[normalizedLevel] || 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)';
+    return CONFIDENTIALITY_COLORS[normalizedLevel] || 'linear-linear(135deg, #3b82f6 0%, #2563eb 100%)';
   };
 
   const calculatePeriodStats = (documents, range) => {
@@ -528,7 +528,7 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100/50">
-      {/* Header avec gradient */}
+      {/* Header avec linear */}
       <div className="relative bg-linear-to-r from-blue-600 via-blue-500 to-cyan-500 text-white">
         <div className="absolute inset-0 bg-black/10" />
         <div className="relative max-w-7xl mx-auto px-6 py-8">
@@ -670,10 +670,10 @@ const Dashboard = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={periodStats.slice(-7)}>
                   <defs>
-                    <linearGradient id="colorDocuments" x1="0" y1="0" x2="0" y2="1">
+                    <linearlinear id="colorDocuments" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
                       <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                    </linearGradient>
+                    </linearlinear>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
                   <XAxis 
@@ -765,10 +765,10 @@ const Dashboard = () => {
                   </Pie>
                   <defs>
                     {renderConfidentialityPieChartData().map((entry, index) => (
-                      <linearGradient key={index} id={`confidentiality-${index}`} x1="0" y1="0" x2="0" y2="1">
+                      <linearlinear key={index} id={`confidentiality-${index}`} x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor={getConfidentialityColor(entry.level).match(/#[a-fA-F0-9]{6}/g)?.[0] || '#3b82f6'} />
                         <stop offset="100%" stopColor={getConfidentialityColor(entry.level).match(/#[a-fA-F0-9]{6}/g)?.[1] || '#2563eb'} />
-                      </linearGradient>
+                      </linearlinear>
                     ))}
                   </defs>
                   <Tooltip 

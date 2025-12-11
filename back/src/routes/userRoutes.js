@@ -8,7 +8,8 @@ import {
   updateUser,
   deleteUser,
   getUserStats,
-  changePassword
+  changePassword,
+  resetPassword
 } from '../controllers/userController.js';
 import { User } from '../models/index.js';
 
@@ -54,6 +55,9 @@ router.get('/', authenticateToken, adminMiddleware, async (req, res) => {
 
 // Changer le mot de passe
 router.put('/change-password', authenticateToken, changePassword);
+
+// Réinitialiser le mot de passe (admin seulement)
+router.put('/:id/reset-password', authenticateToken, adminMiddleware, resetPassword);
 
 // Récupérer un utilisateur par ID
 router.get('/:id', authenticateToken, getUserById);
