@@ -36,6 +36,7 @@ import ResetPasswordModal from './ResetPasswordModal';
 
 const UserList = () => {
   const [users, setUsers] = useState([]);
+  const [allUsers, setAllUsers] = useState([]); // Stocker tous les utilisateurs pour le filtrage côté client
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -63,6 +64,7 @@ const UserList = () => {
   });
   const [departments, setDepartments] = useState([]);
   const [exportLoading, setExportLoading] = useState(false);
+  const [pageSize, setPageSize] = useState(10);
 
   // Fonction pour obtenir l'icône du rôle
   const getRoleIcon = (role) => {
@@ -83,40 +85,128 @@ const UserList = () => {
     setDepartments(depts);
   };
 
+  // Fonction pour appliquer les filtres
+  const applyFilters = (usersData, search = '', filterParams = filters) => {
+    let filtered = [...usersData];
+
+    // Filtre de recherche
+    if (search) {
+      const searchLower = search.toLowerCase();
+      filtered = filtered.filter(user =>
+        user.firstName?.toLowerCase().includes(searchLower) ||
+        user.lastName?.toLowerCase().includes(searchLower) ||
+        user.email?.toLowerCase().includes(searchLower) ||
+        user.phone?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Filtre par rôle
+    if (filterParams.role) {
+      filtered = filtered.filter(user => user.role === filterParams.role);
+    }
+
+    // Filtre par statut
+    if (filterParams.status === 'active') {
+      filtered = filtered.filter(user => user.isActive);
+    } else if (filterParams.status === 'inactive') {
+      filtered = filtered.filter(user => !user.isActive);
+    }
+
+    // Filtre par département
+    if (filterParams.department) {
+      filtered = filtered.filter(user => user.department === filterParams.department);
+    }
+
+    // Filtre par activité récente
+    if (filterParams.recentActivity) {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      filtered = filtered.filter(user => {
+        if (!user.lastLogin) return false;
+        const lastLoginDate = new Date(user.lastLogin);
+        return lastLoginDate >= yesterday;
+      });
+    }
+
+    // Trier les utilisateurs
+    filtered.sort((a, b) => {
+      const fieldA = a[sortField]?.toString().toLowerCase() || '';
+      const fieldB = b[sortField]?.toString().toLowerCase() || '';
+      
+      if (sortDirection === 'asc') {
+        return fieldA.localeCompare(fieldB);
+      } else {
+        return fieldB.localeCompare(fieldA);
+      }
+    });
+
+    return filtered;
+  };
+
+  // Fonction pour paginer les résultats
+  const paginateUsers = (usersData, page, size = pageSize) => {
+    const startIndex = (page - 1) * size;
+    const endIndex = startIndex + size;
+    return usersData.slice(startIndex, endIndex);
+  };
+
   const loadUsers = async (page = 1, search = '', filterParams = filters) => {
     try {
       setLoading(true);
       setError(null);
 
-      const response = await userAPI.getAll({
-        page,
-        limit: 10,
-        search,
-        ...filterParams
-      });
-
-      if (response.success) {
-        const usersData = response.data?.users || response.users || [];
-        setUsers(usersData);
-        setTotalPages(response.data?.totalPages || response.totalPages || 1);
-        setTotalUsers(response.data?.total || usersData.length);
-        setCurrentPage(page);
-        
-        // Calculer les statistiques
-        const activeCount = usersData.filter(u => u.isActive).length;
-        const adminCount = usersData.filter(u => u.role === 'admin').length;
-        
-        extractDepartments(usersData);
-        
-        setStats({
-          active: activeCount,
-          inactive: usersData.length - activeCount,
-          admins: adminCount
+      // Charger tous les utilisateurs (si pas encore chargés)
+      if (allUsers.length === 0) {
+        const response = await userAPI.getAll({
+          page: 1,
+          limit: 1000 // Charger beaucoup d'utilisateurs pour le filtrage côté client
         });
-        
-      } else {
-        setError(response.error || 'Erreur lors du chargement des utilisateurs');
+
+        if (response.success) {
+          const usersData = response.data?.users || response.users || [];
+          setAllUsers(usersData);
+          
+          // Extraire les départements
+          extractDepartments(usersData);
+          
+          // Calculer les statistiques initiales
+          const activeCount = usersData.filter(u => u.isActive).length;
+          const adminCount = usersData.filter(u => u.role === 'admin').length;
+          
+          setStats({
+            active: activeCount,
+            inactive: usersData.length - activeCount,
+            admins: adminCount
+          });
+          setTotalUsers(usersData.length);
+        } else {
+          setError(response.error || 'Erreur lors du chargement des utilisateurs');
+          return;
+        }
       }
+
+      // Appliquer les filtres
+      const filteredUsers = applyFilters(allUsers, search, filterParams);
+      
+      // Mettre à jour les statistiques basées sur les filtres
+      const activeCount = filteredUsers.filter(u => u.isActive).length;
+      const adminCount = filteredUsers.filter(u => u.role === 'admin').length;
+      
+      setStats({
+        active: activeCount,
+        inactive: filteredUsers.length - activeCount,
+        admins: adminCount
+      });
+      setTotalUsers(filteredUsers.length);
+      
+      // Paginer les résultats
+      const totalPagesCount = Math.ceil(filteredUsers.length / pageSize);
+      const paginatedUsers = paginateUsers(filteredUsers, page);
+      
+      setUsers(paginatedUsers);
+      setTotalPages(totalPagesCount);
+      setCurrentPage(page);
+
     } catch (err) {
       setError(err.response?.data?.error || 'Erreur de connexion au serveur');
     } finally {
@@ -133,10 +223,78 @@ const UserList = () => {
       loadUsers(1, searchTerm, filters);
     }, 500);
     return () => clearTimeout(timeoutId);
-  }, [searchTerm, filters]);
+  }, [searchTerm, filters, sortField, sortDirection]);
+
+  // Effet pour recharger quand le tri change
+  useEffect(() => {
+    if (allUsers.length > 0) {
+      loadUsers(currentPage, searchTerm, filters);
+    }
+  }, [sortField, sortDirection]);
 
   const handlePageChange = (page) => {
     loadUsers(page, searchTerm, filters);
+  };
+
+  // Ajouter une fonction pour gérer le tri
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  // Modifier handleFilterChange pour recharger avec la page 1
+  const handleFilterChange = (filterType, value) => {
+    setFilters(prev => ({ ...prev, [filterType]: value }));
+    setCurrentPage(1); // Retourner à la première page quand on change un filtre
+  };
+
+  // Modifier les fonctions qui modifient les utilisateurs pour mettre à jour allUsers
+  const handleDeactivate = async () => {
+    if (!selectedUser) return;
+
+    try {
+      setLoading(true);
+      const response = await userAPI.update(selectedUser.id, {
+        isActive: !selectedUser.isActive
+      });
+
+      if (response.success) {
+        setShowDeactivateModal(false);
+        
+        // Mettre à jour l'utilisateur dans allUsers
+        setAllUsers(prev => prev.map(user => 
+          user.id === selectedUser.id 
+            ? { ...user, isActive: !selectedUser.isActive }
+            : user
+        ));
+        
+        // Recharger avec les filtres actuels
+        loadUsers(currentPage, searchTerm, filters);
+      } else {
+        setError(response.error || 'Erreur lors de la désactivation');
+      }
+    } catch (err) {
+      setError(err.response?.data?.error || 'Erreur lors de la désactivation');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Mettre à jour les titres des colonnes pour indiquer le tri
+  const getSortIndicator = (field) => {
+    if (sortField !== field) return null;
+    return sortDirection === 'asc' ? ' ↑' : ' ↓';
+  };
+
+  // Fonction pour réinitialiser complètement les filtres
+  const handleResetAllFilters = () => {
+    setFilters({ role: '', status: '', department: '', recentActivity: false });
+    setSearchTerm('');
+    setCurrentPage(1);
   };
 
   const handleCreateClick = () => {
@@ -160,34 +318,12 @@ const UserList = () => {
     setShowResetPasswordModal(true);
   };
 
-  const handleDeactivate = async () => {
-    if (!selectedUser) return;
-
-    try {
-      setLoading(true);
-      const response = await userAPI.update(selectedUser.id, {
-        isActive: !selectedUser.isActive
-      });
-
-      if (response.success) {
-        setShowDeactivateModal(false);
-        loadUsers(currentPage, searchTerm, filters);
-      } else {
-        setError(response.error || 'Erreur lors de la désactivation');
-      }
-    } catch (err) {
-      setError(err.response?.data?.error || 'Erreur lors de la désactivation');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleResetPassword = async (newPassword) => {
     if (!selectedUser) return;
 
     try {
       setLoading(true);
-      const response = await userAPI.resetPassword(selectedUser.id, { newPassword });
+      const response = await userAPI.resetPassword(selectedUser.id, newPassword);
 
       if (response.success) {
         setShowResetPasswordModal(false);
@@ -200,19 +336,6 @@ const UserList = () => {
       setError(err.response?.data?.error || 'Erreur lors de la réinitialisation du mot de passe');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleFilterChange = (filterType, value) => {
-    setFilters(prev => ({ ...prev, [filterType]: value }));
-  };
-
-  const handleSort = (field) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDirection('asc');
     }
   };
 
@@ -245,7 +368,10 @@ const UserList = () => {
   const handleExport = async () => {
     try {
       setExportLoading(true);
-      const dataStr = JSON.stringify(users, null, 2);
+      
+      // Exporter les utilisateurs filtrés
+      const filteredUsers = applyFilters(allUsers, searchTerm, filters);
+      const dataStr = JSON.stringify(filteredUsers, null, 2);
       const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
       const exportFileDefaultName = `utilisateurs_${new Date().toISOString().split('T')[0]}.json`;
       const linkElement = document.createElement('a');
@@ -284,7 +410,8 @@ const UserList = () => {
               Gestion des utilisateurs
             </h1>
             <p className="text-slate-600">
-              {totalUsers} utilisateur{totalUsers !== 1 ? 's' : ''} dans le système
+              {totalUsers} utilisateur{totalUsers !== 1 ? 's' : ''} trouvé{totalUsers !== 1 ? 's' : ''} 
+              {Object.values(filters).some(f => f !== '' && f !== false) ? ' (filtrés)' : ''}
             </p>
           </div>
           
@@ -313,14 +440,16 @@ const UserList = () => {
           </div>
         </div>
 
-        {/* Cartes de statistiques - RETIRÉ "EN LIGNE" */}
+        {/* Cartes de statistiques */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <div className="bg-linear-to-br from-emerald-50 to-emerald-100 border border-emerald-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-emerald-600 mb-1">Actifs</p>
                 <p className="text-3xl font-bold text-slate-900">{stats.active}</p>
-                <p className="text-xs text-emerald-500 mt-1">+{Math.round(stats.active / totalUsers * 100)}%</p>
+                <p className="text-xs text-emerald-500 mt-1">
+                  {totalUsers > 0 ? `+${Math.round((stats.active / totalUsers) * 100)}%` : '0%'}
+                </p>
               </div>
               <div className="w-14 h-14 bg-linear-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-md">
                 <CheckCircle className="w-7 h-7 text-white" />
@@ -357,9 +486,11 @@ const UserList = () => {
           <div className="bg-linear-to-br from-slate-50 to-slate-100 border border-slate-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-600 mb-1">Total</p>
+                <p className="text-sm text-slate-600 mb-1">Total filtré</p>
                 <p className="text-3xl font-bold text-slate-900">{totalUsers}</p>
-                <p className="text-xs text-slate-500 mt-1">Tous utilisateurs</p>
+                <p className="text-xs text-slate-500 mt-1">
+                  {allUsers.length > 0 ? `sur ${allUsers.length} au total` : 'Tous utilisateurs'}
+                </p>
               </div>
               <div className="w-14 h-14 bg-linear-to-br from-slate-500 to-slate-600 rounded-xl flex items-center justify-center shadow-md">
                 <Users className="w-7 h-7 text-white" />
@@ -393,16 +524,30 @@ const UserList = () => {
               }`}
             >
               <Filter className="w-4 h-4" />
-              <span>Filtres {Object.values(filters).filter(Boolean).length > 0 && `(${Object.values(filters).filter(Boolean).length})`}</span>
+              <span>
+                Filtres 
+                {Object.values(filters).filter(f => f !== '' && f !== false).length > 0 && 
+                  ` (${Object.values(filters).filter(f => f !== '' && f !== false).length})`}
+              </span>
             </button>
             
             <button
-              onClick={() => loadUsers(currentPage, searchTerm, filters)}
+              onClick={() => loadUsers(1, searchTerm, filters)}
               className="px-4 py-3.5 border border-slate-300 text-slate-700 rounded-xl font-medium flex items-center space-x-2 hover:bg-slate-50 transition-colors"
             >
               <RefreshCw className="w-4 h-4" />
               <span className="hidden md:inline">Actualiser</span>
             </button>
+
+            {(searchTerm || Object.values(filters).some(f => f !== '' && f !== false)) && (
+              <button
+                onClick={handleResetAllFilters}
+                className="px-4 py-3.5 border border-slate-300 text-slate-700 rounded-xl font-medium flex items-center space-x-2 hover:bg-slate-50 transition-colors"
+              >
+                <XCircle className="w-4 h-4" />
+                <span className="hidden md:inline">Tout réinitialiser</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -422,6 +567,7 @@ const UserList = () => {
                   <option value="">Tous les rôles</option>
                   <option value="admin">Administrateur</option>
                   <option value="moderator">Gestionnaire</option>
+                  <option value="gestionnaire">Gestionnaire</option>
                   <option value="user">Utilisateur</option>
                 </select>
               </div>
@@ -465,7 +611,7 @@ const UserList = () => {
                     onChange={(e) => handleFilterChange('recentActivity', e.target.checked)}
                     className="w-4 h-4 text-emerald-600 border-slate-300 rounded focus:ring-emerald-500"
                   />
-                  <span className="text-sm text-slate-700">Activité récente</span>
+                  <span className="text-sm text-slate-700">Activité récente (24h)</span>
                 </label>
               </div>
             </div>
@@ -481,7 +627,7 @@ const UserList = () => {
               </button>
               
               <div className="text-sm text-slate-500">
-                {users.length} résultat{users.length !== 1 ? 's' : ''} trouvé{users.length !== 1 ? 's' : ''}
+                {users.length} résultat{users.length !== 1 ? 's' : ''} sur la page
               </div>
             </div>
           </div>
@@ -504,29 +650,47 @@ const UserList = () => {
         </div>
       )}
 
-      {/* Tableau des utilisateurs */}
+      {/* Tableau des utilisateurs avec en-têtes cliquables pour le tri */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-6">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200">
             <thead className="bg-linear-to-r from-slate-50 to-slate-100">
               <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                  Utilisateur
+                <th 
+                  className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider cursor-pointer hover:bg-slate-200 transition-colors"
+                  onClick={() => handleSort('lastName')}
+                >
+                  Utilisateur {getSortIndicator('lastName')}
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                  Contact
+                <th 
+                  className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider cursor-pointer hover:bg-slate-200 transition-colors"
+                  onClick={() => handleSort('email')}
+                >
+                  Contact {getSortIndicator('email')}
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                  Rôle
+                <th 
+                  className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider cursor-pointer hover:bg-slate-200 transition-colors"
+                  onClick={() => handleSort('role')}
+                >
+                  Rôle {getSortIndicator('role')}
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                  Département
+                <th 
+                  className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider cursor-pointer hover:bg-slate-200 transition-colors"
+                  onClick={() => handleSort('department')}
+                >
+                  Département {getSortIndicator('department')}
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                  Statut
+                <th 
+                  className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider cursor-pointer hover:bg-slate-200 transition-colors"
+                  onClick={() => handleSort('isActive')}
+                >
+                  Statut {getSortIndicator('isActive')}
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                  Dernière activité
+                <th 
+                  className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider cursor-pointer hover:bg-slate-200 transition-colors"
+                  onClick={() => handleSort('lastLogin')}
+                >
+                  Dernière activité {getSortIndicator('lastLogin')}
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
                   Actions
@@ -657,7 +821,8 @@ const UserList = () => {
           <div className="bg-linear-to-r from-slate-50 to-slate-100 px-6 py-4 border-t border-slate-200">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="text-sm text-slate-600">
-                Affichage de <span className="font-semibold">{users.length}</span> utilisateurs
+                Affichage de <span className="font-semibold">{users.length}</span> utilisateurs sur{' '}
+                <span className="font-semibold">{totalUsers}</span> trouvés
               </div>
               
               <div className="flex items-center space-x-2">
@@ -713,13 +878,22 @@ const UserList = () => {
             </div>
             <h3 className="text-lg font-semibold text-slate-700 mb-2">Aucun utilisateur trouvé</h3>
             <p className="text-slate-500 mb-6 max-w-md mx-auto">
-              {searchTerm 
-                ? `Aucun utilisateur ne correspond à "${searchTerm}"`
+              {searchTerm || Object.values(filters).some(f => f !== '' && f !== false)
+                ? 'Aucun utilisateur ne correspond aux critères de recherche et de filtrage'
                 : 'Commencez par ajouter un nouvel utilisateur'}
             </p>
+            {(searchTerm || Object.values(filters).some(f => f !== '' && f !== false)) && (
+              <button
+                onClick={handleResetAllFilters}
+                className="mb-4 px-6 py-3 bg-slate-100 text-slate-700 rounded-xl font-semibold hover:bg-slate-200 transition-all duration-300 inline-flex items-center space-x-2 shadow-sm"
+              >
+                <XCircle className="w-5 h-5" />
+                <span>Réinitialiser les filtres</span>
+              </button>
+            )}
             <button
               onClick={handleCreateClick}
-              className="bg-linear-to-r from-emerald-500 to-teal-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 inline-flex items-center space-x-2 shadow-md"
+              className="ml-4 bg-linear-to-r from-emerald-500 to-teal-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 inline-flex items-center space-x-2 shadow-md"
             >
               <Plus className="w-5 h-5" />
               <span>Ajouter un utilisateur</span>
@@ -734,7 +908,9 @@ const UserList = () => {
           onClose={() => setIsCreateModalOpen(false)}
           onSuccess={() => {
             setIsCreateModalOpen(false);
-            loadUsers(currentPage, searchTerm, filters);
+            // Recharger tous les utilisateurs pour inclure le nouveau
+            setAllUsers([]); // Forcer un rechargement complet
+            loadUsers(1, searchTerm, filters);
           }}
         />
       )}
@@ -750,6 +926,8 @@ const UserList = () => {
           onSuccess={() => {
             setShowEditModal(false);
             setSelectedUser(null);
+            // Recharger tous les utilisateurs pour inclure les modifications
+            setAllUsers([]); // Forcer un rechargement complet
             loadUsers(currentPage, searchTerm, filters);
           }}
         />

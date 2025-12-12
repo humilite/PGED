@@ -37,11 +37,16 @@ const ResetPasswordModal = ({ user, onClose, onReset, loading }) => {
   };
 
   const handleSubmit = () => {
-    if (newPassword !== confirmPassword) {
+    const trimmedPassword = newPassword.trim();
+    if (!trimmedPassword) {
+      alert("Le mot de passe ne peut pas être vide");
+      return;
+    }
+    if (trimmedPassword !== confirmPassword.trim()) {
       alert("Les mots de passe ne correspondent pas");
       return;
     }
-    onReset(newPassword);
+    onReset(trimmedPassword);
   };
 
   const getStrengthColor = (strength) => {
